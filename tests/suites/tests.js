@@ -38,14 +38,17 @@ console.log("— seating, signals, and perk gating —");
 
 console.log("— Senate Rules resolution honors risk & fires fx —");
 {
-  // run many seeds; count confirmations of a HIGH-risk vs LOW-risk resume with identical stats
+  // run many seeds; count confirmations of a HIGH-risk vs LOW-risk resume with identical stats.
+  // V3: the ~80% recalibration clamps an INS-9 insider at the 0.95 ceiling where risk can't
+  // differentiate — so this comparison uses a typical INS-5 governor, below the clamp.
+  const MID={bgId:"mayor",attrs:{CHA:6,INS:5,FIS:6,COA:6,FED:5,OPR:7}};
   let hi=0,lo=0,N=300;
   for(let s=0;s<N;s++){
-    const g1=newGame(CFG({seed:9000+s}));
+    const g1=newGame(CFG({seed:9000+s,...MID}));
     transitionPick(g1,"CDCR","reformer");            // risk +0.05
     for(let i=0;i<3;i++){proposeIfJan(g1);endMonth(g1);}
     if(g1.cabinet.some(c=>c.nm==="Y. Kimura"&&!c.pending))hi++;
-    const g2=newGame(CFG({seed:9000+s}));
+    const g2=newGame(CFG({seed:9000+s,...MID}));
     transitionPick(g2,"DOF","reformer");             // risk −0.03 (LAO alum)
     for(let i=0;i<3;i++){proposeIfJan(g2);endMonth(g2);}
     if(g2.cabinet.some(c=>c.nm==="V. Okoye"&&!c.pending))lo++;

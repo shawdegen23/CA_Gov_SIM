@@ -1999,9 +1999,13 @@ function endMonth(g){
     m.sigsGot+=Math.round(m.rate*1000*(1+RNG.norm(0,0.08)));
     if(m.sigsGot>=m.sigs){
       m.gathering=false;m.sigsGot=m.sigs;
-      const eTurn=g.turn<=21?23:47;m.electionTurn=eTurn;
+      // V3 fix: measures go to the NEXT November — odd years included. California holds odd-year
+      // specials when there's business for one (2005, 2009, 2021, Prop 50 in 2025); a qualified
+      // initiative should not sit in a drawer for 18 months waiting on the gubernatorial cycle.
+      const eTurn=[11,23,35,47].find(e=>e>=g.turn+3)||47;m.electionTurn=eTurn;
       dAp(g,0.5);
-      cov(g,"AP",`${m.t} QUALIFIES for the ${eTurn===23?"November 2028":"November 2030"} ballot`,
+      const eYr=turnDate(eTurn).y,odd=eYr%2===1;
+      cov(g,"AP",`${m.t} QUALIFIES for the November ${eYr} ballot${odd?" — an odd-year special":""}`,
         `${m.sigs.toLocaleString()} valid signatures cleared county verification — ${g.turn-m.startTurn} months of clipboards, at a blended cost the campaign will not itemize. At 25% of signatures the Legislature got its mandatory hearing; it could not amend or block the measure, a fact members recite like a grievance. The opposition committees filed the same afternoon.`);}
     else if(g.turn-m.startTurn>=7){ // the 180-day clock is real
       m.dead=true;
@@ -2272,6 +2276,15 @@ function scheduledEvents(g,d){
   }
   if(m===8&&y===2027){ // HSR private capital decision
     hsrDecision(g);
+  }
+  // V3 fix: odd-year Novembers hold special elections when a qualified measure is waiting —
+  // Newsom did it with Prop 50 in 2025. resolveMeasures no-ops if nothing is due.
+  if(m===11&&(y===2027||y===2029)){
+    const due=g.measures.pending.some(x=>!x.gathering&&x.electionTurn&&x.electionTurn<=g.turn)
+      ||g.measures.hostile.some(h=>h.electionTurn&&h.electionTurn<=g.turn);
+    if(due)cov(g,"CalMatters",`An odd-year election day — the special is real`,
+      `No statewide offices on the ballot, no coattails, no cover: just the measures, alone in the booth. Odd-year turnout is older, whiter, and more homeowner-heavy than the presidential-year electorate — every campaign consultant in Sacramento re-ran their models the day the special was consolidated. The results land tonight.`);
+    resolveMeasures(g);
   }
   if(m===11&&y===2028){ // presidential + L1 MIDTERMS + measures
     cov(g,"AP","Presidential election day in California",
@@ -3509,10 +3522,13 @@ const ACTIONS=[
     return MEASURES.filter(m=>!g.measures.pending.find(p=>p.id===m.id)&&!(g.measures.resolved||[]).find(p=>p.id===m.id)).map(m=>{
       const cost=m.type==="ICA"?12:8;
       return {id:m.id,nm:`${m.t} (${m.type})`,d:m.d+` Requires ${m.sigs.toLocaleString()} valid signatures.`,
-        cost:`${measureFiscalTag(m)} · ${selfFund?"SELF-FUND — $"+cost+"M of your own money":"$"+cost+"M from the war chest + COA roll"}`};});},
+        cost:g.player.chest<cost?`${measureFiscalTag(m)} · NEEDS $${cost}M in the war chest — FUNDRAISE first`
+          :`${measureFiscalTag(m)} · ${selfFund?"SELF-FUND — $"+cost+"M of your own money":"$"+cost+"M from the war chest + COA roll"}`};});},
   run:(g,c)=>{const m=MEASURES.find(x=>x.id===c);const selfFund=g.player.bg==="tech";
     const cost=m.type==="ICA"?12:8;
-    if(g.player.chest<cost){cov(g,"Politico","Signature drive stalls at the bank","Qualification runs ~$9 a signature and the war chest can't cover the invoice. FUNDRAISE first, or make peace with the Legislature you were trying to route around.");return;}
+    if(g.player.chest<cost){
+      g.slots+=2;g.pc=clamp(g.pc+10,0,110); // V3 fix: a launch that never launched refunds its slots and PC
+      cov(g,"Politico","Signature drive stalls at the bank","Qualification runs ~$9 a signature and the war chest can't cover the invoice. FUNDRAISE first, or make peace with the Legislature you were trying to route around. (No slots or capital spent — the vendors don't bill for meetings.)");return;}
     g.player.chest-=cost;
     // SHELF-5: qualification is a DRIVE now — months of visible gathering on the Bill Tracker,
     // at ~$9 a name against the 180-day clock, not an instant roll.
@@ -3556,7 +3572,8 @@ const ACTIONS=[
   run:(g,c)=>{const cut=c.lastIndexOf("|"),mid=c.slice(0,cut),verb=c.slice(cut+1);
     const m=g.measures.pending.find(x=>x.id===mid);if(!m)return;
     if(verb==="surge"){
-      if(g.player.chest<3){cov(g,"Politico","The surge order bounced at the bank","The vendors want payment on signing and the war chest is short. FUNDRAISE, then flood the Costco parking lots.");return;}
+      if(g.player.chest<3){g.slots+=1;g.pc=clamp(g.pc+3,0,110); // V3 fix: refused orders refund their costs
+        cov(g,"Politico","The surge order bounced at the bank","The vendors want payment on signing and the war chest is short. FUNDRAISE, then flood the Costco parking lots. (No slot or capital spent.)");return;}
       g.player.chest-=3;m.sigsGot+=180000;m.rate+=20;
       cov(g,"CalMatters",`The "${m.t}" drive doubles its crews`,
         `$3M bought a surge month: every farmers market, every DMV line, every college quad. ${(180000).toLocaleString()} signatures banked immediately and the weekly rate steps up. The 180-day clock is unmoved, but you just bought back a month of it.`);}
@@ -3569,7 +3586,8 @@ const ACTIONS=[
       else cov(g,"Politico",`The measure tour lands soft`,
           `The rallies happened; the clips led with the protesters outside. The YES number inches up on organization alone, but the big move didn't come. There is another month, until there isn't.`);}
     else if(verb==="ads"){
-      if(g.player.chest<5){cov(g,"Politico","The ad buy dies in accounting","The consultants sent a media plan; the war chest sent regrets. FUNDRAISE, then flood the airwaves.");return;}
+      if(g.player.chest<5){g.slots+=1;g.pc=clamp(g.pc+3,0,110); // V3 fix: refused orders refund their costs
+        cov(g,"Politico","The ad buy dies in accounting","The consultants sent a media plan; the war chest sent regrets. FUNDRAISE, then flood the airwaves. (No slot or capital spent.)");return;}
       g.player.chest-=5;m.playerSpend=(m.playerSpend||0)+3;
       cov(g,"CalMatters",`$5M hits the air for "${m.t}"`,
         "Statewide broadcast, targeted digital, and the mail piece with the schoolteacher in it. No message evolves after Labor Day — the buy just keeps the number climbing while the other side's donors decide how much they hate you. Repeat as funded.");}
@@ -3683,7 +3701,9 @@ LAG_FNS._clearEmergency=g=>{g.flags.emergency=null;};
 LAG_FNS._confirm=(g,fx)=>{
   const c=g.cabinet.find(x=>x.agency===fx.code&&x.pending);if(!c)return;
   const slow=g.player.party==="R"?0.15:0; // a Democratic Senate Rules Committee reads Republican nominees slowly
-  const r=roll(g,"INS",(g.player.bg==="media"?0.25:0.1)+slow+(c.risk||0),0); // APPT-3: the résumé itself has a Rules price
+  // V3 tuning: Senate Rules confirms most nominees in reality — the +0.35 centers a typical
+  // same-party governor near 80%. The media-bench, cross-party, and risky-résumé penalties still bite.
+  const r=roll(g,"INS",(g.player.bg==="media"?0.25:0.1)+slow+(c.risk||0),0.42); // APPT-3: the résumé itself has a Rules price
   if(r.ok){c.pending=false;dAp(g,0.5);
     if(c.fx)for(const[id,d]of Object.entries(c.fx))dAct(g,id,d); // the constituencies react when the outsider is actually seated
     cov(g,"CalMatters",`${c.nm} confirmed to ${c.agencyFull}`,

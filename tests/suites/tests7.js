@@ -83,7 +83,7 @@ console.log("— SHELF-5: signature drives on the clock —");
   endMonth(g);
   T("monthly grind gathers ~rate signatures",m.sigsGot>100000,m.sigsGot.toLocaleString());
   m.sigsGot=m.sigs-1000;endMonth(g);
-  T("completion qualifies for the next November",m.gathering===false&&m.electionTurn===23);
+  T("completion qualifies for the next November",m.gathering===false&&m.electionTurn===11); // V3: odd-year specials — spring 2027 qualifiers go to Nov 2027, not Nov 2028
   thaw(f2);
   // the 180-day clock
   const g2=newGame(CFG({seed:11}));g2.player.chest=30;
