@@ -1822,10 +1822,17 @@ function failureChecks(g){
 /* ===================== 15. SCHEDULED BEATS ===================== */
 function scheduledEvents(g,d){
   const y=d.y,m=d.m,B=g.fiscal.budget;
-  // Jan: budget deadline check + new year resets
+  // Dec: open the NEW year's budget cycle before January's action phase begins.
+  // BUG-1: this reset used to live in the m===1 block — but scheduledEvents runs at month END,
+  // so in years 2–4 the stale proposed:true locked PROPOSE JANUARY BUDGET all January, then the
+  // LAO blasted you in February for missing a window the UI never opened. Reset as December closes.
+  if(m===12&&g.turn<48){
+    g.fiscal.budget={proposed:false,mix:null,solved:0,grade:null,enacted:false,late:0};
+    inbox(g,"Constitutional budget proposal due Jan 10 — PROPOSE JANUARY BUDGET (3 slots)","Jan 10");
+  }
+  // Jan: new-fiscal-year bookkeeping (drift, H.R.1 ramp, the new session's slate)
   if(m===1){
-    if(g.turn>1){ // new FY planning cycle: reset budget object, deficit drifts
-      g.fiscal.budget={proposed:false,mix:null,solved:0,grade:null,enacted:false,late:0};
+    if(g.turn>1){
       g.fiscal.deficit=Math.max(0,g.fiscal.deficit+TUNING.DEFICIT_DRIFT_YR); // spending 5.8% vs revenue 4% drift
       if(y>=2028&&g.flags.hr1Applied<TUNING.HR1_JAN_CAP){ // D2: ramp capped at the DOC's plateau
         const add=Math.min(0.9,TUNING.HR1_JAN_CAP-g.flags.hr1Applied);
@@ -1834,7 +1841,6 @@ function scheduledEvents(g,d){
           cov(g,"LAO","H.R.1 reaches its full weight",
             "The federal cost shift has now plateaued at roughly $5 billion a year all-in — the SNAP share, the Medi-Cal share, the administrative load. It stops growing here. It also never goes away. The LAO files it under 'baseline' now, which is the bureaucratic word for grief that has been accepted.");
       }
-      inbox(g,"Constitutional budget proposal due Jan 10 — PROPOSE JANUARY BUDGET (3 slots)","Jan 10");
       // LEG-1: the new session introduces its own bills — the slate is different every year
       const freshBills=BILL_POOL.filter(b=>(b.yr||2027)===y&&!g.bills.enactedIds.includes(b.id));
       if(freshBills.length)cov(g,"CalMatters",`The ${y} session opens — and the bill drop has your name in it`,
