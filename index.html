@@ -2275,7 +2275,7 @@ function makeHoldouts(g,b){ // deterministic (no RNG stream use — saves replay
   if(b.holdouts||b.needs23)return; // 2/3 bills die on arithmetic, not on three phone calls
   const seedH=hashStr(b.id+":"+g.turn+":"+g.seed);
   const picks=[];const used=new Set();
-  for(let i=0;i<3;i++){let idx=(seedH>>(i*5))%HOLDOUT_POOL.length;
+  for(let i=0;i<3;i++){let idx=(seedH>>>(i*5))%HOLDOUT_POOL.length; // >>> — a signed shift here once indexed the pool at [-5]
     while(used.has(idx))idx=(idx+1)%HOLDOUT_POOL.length;
     used.add(idx);picks.push({...HOLDOUT_POOL[idx],called:false,won:false});}
   b.holdouts=picks;
@@ -3021,6 +3021,46 @@ const ACTIONS=[
   when:g=>true,
   gate:g=>"Your health secretary shakes her head before you finish. \"Prop 35, 2024. The voters dedicated the MCO tax to Medi-Cal rate increases — permanently, by initiative. The sweep you're describing is what the measure was written to prevent. We can restructure at the margins with federal sign-off, which\" — she checks the posture meter on the wall, metaphorically — \"we will not be getting.\" The hospitals qualified that initiative precisely so this conversation would end this way.",
   run:()=>{}},
+ /* REV-1: ACTIVE revenue tools — the ones that don't need 54 and 27. Ongoing money is real;
+    one-time money reduces THIS year's gap and boomerangs back, priced honestly, twelve months later. */
+ {id:"revenforce",nm:"FTB Enforcement Sprint",cat:"Fiscal maneuvers",slots:1,pc:3,
+  when:g=>g.flags.revEnfY!==turnDate(g.turn).y?true:"One enforcement sprint per year — the auditors are human",
+  run:(g,c)=>{g.flags.revEnfY=turnDate(g.turn).y;
+    const r=roll(g,"FIS",0.12,0);
+    const amt=r.ok?0.6:0.3;
+    queue(g,3,{k:"deficit",d:-amt},"FTB enforcement revenue arriving","you");
+    dAct(g,"chamber",-3);
+    cov(g,"CalMatters",`The tax gap gets a visit: FTB surges audit staff at the top of the distribution`,
+      `California's tax gap runs into the billions annually, most of it in pass-through entities and abusive shelters the Franchise Tax Board never has the staff to chase. You gave them the staff. ${r.ok?"The sprint is landing "+fmtB(amt)+"/yr in assessments — real, ongoing, and no vote required.":"Half the assessments are already in administrative appeal — "+fmtB(amt)+"/yr sticks, the rest is billable hours."} The Chamber's tax committee calls it 'harassment of job creators'; the LAO calls it 'collections.'`);}},
+ {id:"revamnesty",nm:"Tax Amnesty Window",cat:"Fiscal maneuvers",slots:1,pc:4,
+  when:g=>g.flags.amnestyUsed?"Done once — a second amnesty teaches everyone to wait for the third":true,
+  run:(g,c)=>{g.flags.amnestyUsed=true;
+    g.fiscal.deficit=clamp(g.fiscal.deficit-1.2,-18,99);
+    g.fiscal.gimmicks+=0.5;
+    queue(g,12,{k:"deficit",d:0.8},"amnesty one-time money runs out","you");
+    cov(g,"CalMatters","A 90-day tax amnesty: pay up, penalty-free, clock's running",
+      "The 2005 and 2011 playbook: delinquents settle old liabilities without penalties, and roughly $1.2B walks in the door this year. The LAO's footnote writes itself — most of it is money that would have arrived eventually, some of it is borrowed from future compliance, and none of it recurs. One-time money, annual problem: the gap this closes reopens next year, about two-thirds as wide.",
+      "MODEL NOTE: amnesty yields modeled on the 2005 ($4.8B, mostly acceleration) and 2011 rounds — one-time, with a compliance-pull-forward boomerang.");}},
+ {id:"revsurplus",nm:"Sell Surplus State Property",cat:"Fiscal maneuvers",slots:1,pc:2,
+  when:g=>g.flags.surplusSaleY!==turnDate(g.turn).y?true:"DGS is still closing this year's escrow",
+  choices:g=>[
+    {id:"cash",nm:"Auction to the highest bidder",d:"Office blocks the hybrid-work era emptied, odd parcels, a fairground nobody visits. Real money once — and the LAO will note, correctly, that you sold the furniture to pay the rent.",cost:"+$0.4B one-time (boomerangs)"},
+    {id:"housing",nm:"Prioritize housing developers at a discount",d:"Less money, more units: parcels move to builders with entitlement-ready plans. The YIMBYs cheer; the auditor notes the discount.",cost:"+$0.2B one-time · housing +2"}],
+  run:(g,c)=>{g.flags.surplusSaleY=turnDate(g.turn).y;
+    const amt=c==="housing"?0.2:0.4;
+    g.fiscal.deficit=clamp(g.fiscal.deficit-amt,-18,99);
+    queue(g,12,{k:"deficit",d:amt},"property-sale one-time money runs out","you");
+    if(c==="housing"){queue(g,4,{k:"issue",key:"housingBoost",d:2},"surplus parcels to builders","you");dAct(g,"yimby",4);}
+    cov(g,"AP",c==="housing"?"State land moves to housing builders at a strategic discount":"DGS auctions the surplus portfolio — the hybrid-work dividend",
+      c==="housing"?"The parcels went to entitlement-ready projects at below-market prices — less cash for the General Fund, more units in the pipeline, and one press conference where everyone actually smiled.":"Empty office blocks, remnant Caltrans parcels, one decommissioned fairground: sold. The money is real and arrives once. The buildings, a DGS veteran notes, took ninety years to accumulate and eighteen months to liquidate.");}},
+ {id:"revfedsweep",nm:"Federal Reimbursement Sweep",cat:"Fiscal maneuvers",slots:1,pc:3,
+  when:g=>g.flags.revSweepY!==turnDate(g.turn).y?true:"One sweep per year — the claims staff is still filing this one",
+  run:(g,c)=>{g.flags.revSweepY=turnDate(g.turn).y;
+    const r=roll(g,"OPR",0.15,cabPerk(g,"vetting")*10); // a GovOps auditor knows where the unclaimed money hides
+    const amt=r.ok?0.4:0.15;
+    queue(g,4,{k:"deficit",d:-amt},"federal reimbursements recovered","you");
+    cov(g,"CalMatters",r.ok?`The reimbursement sweep finds ${fmtB(amt)}/yr Washington already owed us`:"The reimbursement sweep finds less than hoped",
+      r.ok?"Medicaid administrative claims never filed, disaster costs never invoiced, federal match left on the table across nine agencies — the least glamorous money in government, recovered by making the departments do the paperwork. No vote, no fight, no headline. The LAO approves in its love language: a footnote.":"The files were messier than the theory: "+fmtB(amt)+"/yr recovered, the rest disputed or expired. The claims unit keeps the checklist for next year.");}},
  {id:"pensiondeal",nm:"Negotiate Pension Changes",cat:"Fiscal maneuvers",slots:2,pc:8,
   when:g=>true,
   run:(g,c)=>{const r=roll(g,"COA",0.22,(g.actors.seiu+g.actors.cta)/400);
@@ -3927,6 +3967,8 @@ function buildMemo(g){
   if(d.y===2030&&d.m<=5&&g.flags.ltgovHostile&&!g.flags.primaryBlitz)out.push("The Lieutenant Governor is running and your primary is in June. PRIMARY CAMPAIGN BLITZ is sitting there. Incumbents who skip it join a support group.");
   if(g.pc>60&&g.slots===3)out.push(`You're sitting on ${g.pc} PC and a full slate of actions. Capital unspent is capital decaying — the honeymoon math never improves.`);
   if(g.pc<12&&(g.flags.barnstormCd||0)<=g.turn)out.push(`Political capital is down to ${g.pc} — you can't afford your own agenda. BARNSTORM THE STATE converts a road month into chits (town halls, the donor circuit, or the counties), and an under-scheduled month quietly regenerates more than a frantic one.`);
+  if(g.fiscal.deficit>32){const revTools=[["revenforce","FTB ENFORCEMENT SPRINT"],["revfedsweep","FEDERAL REIMBURSEMENT SWEEP"],["revamnesty","TAX AMNESTY"],["revsurplus","SURPLUS PROPERTY SALE"]].filter(([id])=>{const a=ACTIONS.find(x=>x.id===id);return a&&a.when(g)===true;}).map(([,n])=>n);
+    if(revTools.length)out.push(`The gap is ${fmtB(g.fiscal.deficit)} and no 2/3 tax vote exists. Revenue you can raise WITHOUT the Legislature: ${revTools.join(", ")}. Enforcement and reimbursements are ongoing money; amnesties and asset sales are one-time — they boomerang in twelve months, priced honestly.`);}
   if(!out.length)out.push("A quiet month on paper. There is no such thing — check In Motion for what's already coming, and spend the quiet building standing you'll need in the loud months.");
   return out;
 }
