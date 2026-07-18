@@ -2259,12 +2259,13 @@ function scheduledEvents(g,d){
   if(m===8){ // suspense #2 + session end
     suspenseFile(g,"August");
     sessionEnd(g,y);
-  }
-  if(m===9){
+    // V3 timing audit: scheduledEvents runs at month END, and endMonth auto-enacts the desk at
+    // September's end BEFORE this function runs — so the old m===9 reminder could never fire.
+    // The desk fills here, as August closes; the reminder must open September, not eulogize it.
     if(g.bills.desk.length)inbox(g,`${g.bills.desk.length} bills on your desk — Sept 30 deadline. Unsigned bills become law WITHOUT your signature.`,"Sep 30");
   }
   if(m===10&&y===2027&&!g.flags.snapLanded){
-    g.flags.snapLanded=true;g.fiscal.deficit+=2.0;
+    g.flags.snapLanded=true;g.fiscal.deficit+=TUNING.HR1_SNAP;
     cov(g,"LAO","H.R.1's SNAP cost shift lands: ~$2B a year, starting now",
       "As scheduled since July 2025, the federal government began charging California a 15 percent share of SNAP benefit costs — the price of the state's ~11 percent payment error rate under the new federal formula. Roughly $2 billion a year, every year, added to a structural problem that did not need the help.",
       "VERIFIED: H.R.1 cost shifts $1.3B (2026-27) rising to ~$5B/yr by 2029-30. RESEARCH DOC §1.7.");
