@@ -1569,6 +1569,14 @@ function newGame(cfg){
   seedOpening(g,bg);
   return g;
 }
+/* SLOT-1: action capacity is EARNED. Base 3. A fully staffed, high-quality cabinet runs the
+   machine for you (+1, dynamic — a scandal vacancy takes it back). Experience adds one more:
+   year 3 for most governors, year 2 for insiders (Legislative Leader background, or INS ≥ 8). */
+function machineActive(g){
+  return g.cabinet.length>=9&&!g.cabinet.some(c=>c.pending||c.type==="caretaker")&&avgCabinetQ(g)>=2.4;
+}
+function veteranAt(g){return (g.player.bg==="leg"||g.player.attrs.INS>=8)?13:25;}
+function maxSlots(g){return 3+(machineActive(g)?1:0)+(g.turn>=veteranAt(g)?1:0);}
 /* Confirmed members average against the full 9 posts; a vacancy counts as an acting deputy (1.5★). */
 function avgCabinetQ(g){
   const filled=g.cabinet.filter(c=>!c.pending);
@@ -1990,7 +1998,16 @@ function endMonth(g){
   if(!g.over){
     g.turn++;
     if(g.turn>48){g.phase="report";buildLegacy(g);}
-    else g.slots=3;
+    else{
+      g.slots=maxSlots(g); // SLOT-1: capacity is earned, not fixed
+      if(machineActive(g)&&!g.flags.machineTold){g.flags.machineTold=true;
+        cov(g,"CalMatters","The administration hits its stride — a fourth thing gets done each month",
+          "Nine confirmed secretaries, a ★★★ average, no caretakers: the org chart has started doing work the horseshoe used to do by hand. Memos arrive pre-decided; meetings end early; a FOURTH ACTION SLOT opens each month for as long as the machine holds. Lose a secretary to scandal and you lose the slot with them — capacity is people.");}
+      if(g.turn>=veteranAt(g)&&!g.flags.vetTold){g.flags.vetTold=true;
+        cov(g,"Politico",(g.player.bg==="leg"||g.player.attrs.INS>=8)?"The insider's dividend arrives early — a fifth gear, year two":"Two years in, the building finally makes sense — a new gear",
+          (g.player.bg==="leg"||g.player.attrs.INS>=8?"You came in already knowing where the light switches are, and it shows a year ahead of schedule: ":"Every governor spends two years learning which meetings matter, which calls to return, and which fights schedule themselves. You've served the apprenticeship: ")+
+          "an ADDITIONAL ACTION SLOT opens each month, permanently. Veterans of the horseshoe say the job doesn't get easier — you just stop wasting motion.");}
+    }
   }
   // deadline reminders
   g.inbox=g.inbox.filter(i=>g.turn-i.t<6);
@@ -3990,7 +4007,7 @@ function topbar(g,d,nd,apDelta){
   <div class="tb-item"><span class="lab">Date · Turn</span><span class="val">${d.label} · ${g.turn}/48</span></div>
   <div class="tb-item"><span class="lab">Approval</span><span class="val ${flashCls("ap",g.approval)}">${g.approval.toFixed(0)}% <span class="${apDelta>=0?"delta-up":"delta-dn"}" style="font-size:11px">${apDelta>=0?"▲":"▼"}${Math.abs(apDelta).toFixed(1)}</span></span></div>
   <div class="tb-item"><span class="lab">Political Capital</span><span class="val ${flashCls("pc",g.pc)}">${g.pc}</span></div>
-  <div class="tb-item"><span class="lab">Actions</span><span class="val">${g.slots}<span class="used">/3</span></span></div>
+  <div class="tb-item"><span class="lab">Actions</span><span class="val" title="${machineActive(g)?"THE MACHINE: +1 slot while the cabinet stays full-strength. ":""}${g.turn>=veteranAt(g)?"VETERAN: +1 permanent slot. ":"Experience slot unlocks "+turnDate(veteranAt(g)).label+". "}${machineActive(g)?"":"A fully staffed ★★★-average cabinet adds a 4th slot."}">${g.slots}<span class="used">/${maxSlots(g)}</span></span></div>
   <div class="tb-item"><span class="lab">War chest</span><span class="val">$${g.player.chest.toFixed(0)}M</span></div>
   <span class="tb-deadline">⚠ NEXT: ${nd.label} — ${nd.inTurns===0?"THIS MONTH":nd.inTurns+" turn"+(nd.inTurns>1?"s":"")}</span>
   <button class="ghost" data-act="system" title="Settings · Save/Load · Model Notes · Debug" style="padding:3px 9px">⚙</button></div>`;
@@ -4139,7 +4156,8 @@ function buildMemo(g){
   if(d.m===1&&!g.fiscal.budget.proposed)out.push("The constitutional budget deadline is Jan 10 — THIS MONTH. PROPOSE JANUARY BUDGET costs all 3 slots. Nothing else on this list matters if you miss it.");
   if(g.transitionOpen&&cabinetVacancies(g).length)out.push(`${cabinetVacancies(g).length} cabinet posts unfilled (transition set-piece above — free, no slots). Every operational roll runs through acting deputies until you staff them; caretakers get auto-named after March.`);
   const caretakers=g.cabinet.filter(c=>c.type==="caretaker").length;
-  if(!g.transitionOpen&&(cabinetVacancies(g).length||caretakers))out.push(`${cabinetVacancies(g).length?cabinetVacancies(g).length+" vacant cabinet post(s)":""}${cabinetVacancies(g).length&&caretakers?" and ":""}${caretakers?caretakers+" caretaker post(s)":""} dragging your operational rolls — FILL A CABINET VACANCY.`);
+  if(!g.transitionOpen&&(cabinetVacancies(g).length||caretakers))out.push(`${cabinetVacancies(g).length?cabinetVacancies(g).length+" vacant cabinet post(s)":""}${cabinetVacancies(g).length&&caretakers?" and ":""}${caretakers?caretakers+" caretaker post(s)":""} dragging your operational rolls${g.flags.machineTold&&!machineActive(g)?" — AND costing you the machine's 4th action slot":""} — FILL A CABINET VACANCY.`);
+  if(!g.transitionOpen&&!machineActive(g)&&!g.flags.machineTold&&g.cabinet.length>=9&&avgCabinetQ(g)<2.4&&!g.cabinet.some(c=>c.pending||c.type==="caretaker"))out.push(`The cabinet is seated but ordinary (${avgCabinetQ(g).toFixed(1)}★ avg — the machine slot needs 2.4★). Reformers are the only ★★★ hires; Senate Rules is the price.`);
   if(d.m===5&&g.fiscal.budget.proposed&&!g.fiscal.budget.revised)out.push("May Revision window. Face the revenue reality in public or roll the dice on holding January's numbers.");
   if(g.bills.desk.length)out.push(`${g.bills.desk.length} bills on the desk. Sign or veto by Sept 30 — unsigned bills become law WITHOUT your signature, and everyone knows what that means.`);
   if(g.flags.disasterActive&&!g.flags.disasterActive.handled)out.push("Active disaster, no declaration. Every hour without a command presence is a clip. DECLARE EMERGENCY.");
@@ -4281,7 +4299,7 @@ function cardPanel(g){
 /* F3: one-time concept tips (persisted in the save) */
 function tipsBanner(g){
   const t=g.flags.tips,items=[];
-  if(!t.slots&&g.turn===1)items.push(["slots","THREE SLOTS A MONTH. Everything you do costs at least one. Crises can eat them without asking. Governing is triage with a letterhead."]);
+  if(!t.slots&&g.turn===1)items.push(["slots","THREE SLOTS A MONTH to start. Everything you do costs at least one; crises can eat them without asking. Capacity is EARNABLE: a fully staffed ★★★-average cabinet adds a 4th slot (and a scandal takes it back), and two years of experience — one, for insiders — adds a permanent 5th. Governing is triage with a letterhead."]);
   if(!t.pc&&g.turn===2)items.push(["pc","POLITICAL CAPITAL is the real currency — actions burn it; approval, quiet months (unused slots), and BARNSTORM THE STATE rebuild it. The honeymoon bonus dies around month eight. Spend while you're liked."]);
   if(!t.motion&&g.lag.length>0&&g.turn>=2)items.push(["motion","IN MOTION (below) is the lag queue: everything you set moving and when it lands. Nothing in this state resolves on the day you decide it — that panel is the game's honest heart."]);
   if(!t.prov&&g.turn===3)items.push(["prov","HOVER ANY DOTTED NUMBER for its source and provenance tag. VERIFIED means the research doc pins it; UNVERIFIED means the engine is honest about guessing. The MODEL NOTES drawer lists every guess."]);
@@ -4344,7 +4362,7 @@ function debugPanel(g){
 function actionBar(g){
   const disabled=g.slots<=0;
   return `<div class="actionbar">
-    <span class="slots">ACTIONS <b>${g.slots}</b><span class="used">/3</span> · PC <b>${g.pc}</b></span>
+    <span class="slots">ACTIONS <b>${g.slots}</b><span class="used">/${maxSlots(g)}</span> · PC <b>${g.pc}</b></span>
     <button class="primary" data-act="openactions" ${disabled?"disabled":""} title="Keyboard: A">⚡ Take Action</button>
     <button data-act="openwalls" title="Try the things the office cannot do. The refusal is the education.">🧱 Test the Limits</button>
     <button data-act="ffwd" title="Auto-end quiet months; halts on anything that needs you (F10)">⏩ To next deadline</button>
