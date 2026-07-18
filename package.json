@@ -1,0 +1,9 @@
+{
+  "name": "golden-state",
+  "version": "3.0.0-dev",
+  "private": true,
+  "description": "GOLDEN STATE — Governor of California Simulator. The game is index.html, whole and entire; this package exists only to run the headless test harness.",
+  "scripts": {
+    "test": "node tests/run-all.js"
+  }
+}

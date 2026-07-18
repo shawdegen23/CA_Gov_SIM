@@ -2378,6 +2378,8 @@ function budgetPreview(g,mx){
   return {cred,claimed,ratio,label,ap,costs,dofCred};
 }
 function proposeBudget(g,mx,templateNm){
+  // V3-P0 hardening: a malformed mix must not half-propose a budget and poison every later month.
+  mx=Object.assign({cuts:0,taxes:0,reserves:0,gimmicks:0,rosy:0},mx||{});
   const B=g.fiscal.budget,y=turnDate(g.turn).y;
   B.proposed=true;B.mix={...mx};B.solved=mx.cuts+mx.taxes+mx.reserves;
   // Constituency pricing, scaled to the actual numbers (L5)
@@ -3956,6 +3958,10 @@ function render(){
   }
 }
 function saveBlob(){return JSON.stringify({v:SAVE_VERSION,rngState:RNG.state,rngCalls:RNG.calls,runs:RUN_LEDGER,game:G});}
+/* V3-P0: silent local autosave — best-effort (private mode / quota failures are not the player's problem) */
+function autosave(){try{if(G)localStorage.setItem("gs_autosave",saveBlob());}catch(_){}}
+function autosaveInfo(){try{const s=localStorage.getItem("gs_autosave");if(!s)return null;
+  const env=JSON.parse(s);if(env.v!==SAVE_VERSION||!env.game||!env.game.seed||!env.game.player)return null;return env;}catch(_){return null;}}
 
 /* ---------- CREATION ---------- */
 function renderCreation(){
@@ -3963,9 +3969,14 @@ function renderCreation(){
   let body="";
   if(c.step===1)body=step1(c);else if(c.step===2)body=step2(c);else if(c.step===3)body=step3(c);
   else if(c.step===4)body=step4(c);else body=step5(c);
+  const as=c.step===1?autosaveInfo():null;
+  const resume=as?`<div class="card" style="margin-bottom:14px;border-color:var(--aqua)">
+    <h4 style="font-size:13px">Resume last game — ${esc(as.game.player.name||"Governor")}, ${turnDate(as.game.turn).long} <span class="subtle">(turn ${as.game.turn}/48${as.game.over?" · finished":""})</span></h4>
+    <p class="subtle" style="margin:4px 0 8px">Autosaved locally after every month. Pick up where you left off, or start fresh below.</p>
+    <button class="primary" data-act="resume">Resume</button></div>`:"";
   return `<div class="creation">
     <div class="step-h"><h1>GOLDEN STATE <span class="subtle" style="font-size:12px">· Governor of California · Jan 2027–Jan 2031</span></h1>
-    <span class="steps">STEP ${c.step} / 5 · seed <span class="num">${c.seed}</span></span></div>${body}
+    <span class="steps">STEP ${c.step} / 5 · seed <span class="num">${c.seed}</span></span></div>${resume}${body}
     <p class="footer-note">A deterministic simulator grounded in the July 2026 Research Model. Figures tagged VERIFIED / PROJECTED / UNVERIFIED — hover any number in-game for provenance.</p></div>`;
 }
 function step1(c){
@@ -4700,6 +4711,7 @@ function doEndMonth(){
   const pre=snapshotState();
   const endedTurn=g.turn;
   endMonth(g);g.rngCalls=RNG.calls;
+  autosave();
   makeTicker(pre);
   const stories=g.feed.slice(0,Math.max(0,g.feed.length-(g._feedMark||0))).filter(f=>f.t===endedTurn);
   UI.modal=null;
@@ -4760,6 +4772,7 @@ document.addEventListener("keydown",e=>{
 document.addEventListener("click",e=>{
   const el=e.target.closest("[data-act]");if(!el)return;
   const act=el.dataset.act;
+  UI.lastAct=act+(el.dataset.v?":"+el.dataset.v:""); // V3-P0: crash reports name the click that did it
   const c=UI.cr;
   switch(act){
     case "party":c.party=el.dataset.v;render();break;
@@ -4856,7 +4869,7 @@ document.addEventListener("click",e=>{
       if(dec==="sign"){enactBill(G,b,"sign");
         cov(G,"AP",`Signed: ${b.num} (${b.t})`,`${b.d} Effects propagate on the statute's own schedule — most take effect January 1; the politics took effect immediately.`);}
       else enactBill(G,b,"veto");
-      G.rngCalls=RNG.calls;makeTicker(pre);render();break;}
+      G.rngCalls=RNG.calls;autosave();makeTicker(pre);render();break;}
     case "endmonth":{
       const m=turnDate(G.turn).m;
       if(m===1&&!G.fiscal.budget.proposed&&!UI.abdConfirmed){UI.modal=abdicationModal(G,"budget");render();break;}
@@ -4881,6 +4894,7 @@ document.addEventListener("click",e=>{
         if([1,5,6,8,9].includes(turnDate(G.turn).m))break;
       }
       G.rngCalls=RNG.calls;
+      autosave();
       UI.modal=null;
       if(hops>0&&collected.length&&!G.over&&G.phase==="play")
         UI.modal=interstitialModal(G,collected.slice(0,10),G.turn-1,hops>1?`THE LAST ${hops} MONTHS — ${turnDate(startTurn).label} → ${turnDate(G.turn-1).label}`:null);
@@ -4905,6 +4919,12 @@ document.addEventListener("click",e=>{
     case "toggledebug":UI.debug=!UI.debug;render();break;
     case "printreport":try{window.print();}catch(_){}break;
     case "newgame":{UI.cr={step:1,name:"",party:null,bgId:null,attrs:null,promises:[],scenario:"aswritten",seed:Math.floor(Math.random()*2**31)|0,preview:null};G=null;UI.screen="creation";UI.modal=null;render();break;}
+    case "resume":{const env=autosaveInfo();
+      if(!env){toast("No local autosave found.");render();break;}
+      G=env.game;RNG.restore(env.rngState,env.rngCalls);
+      if(Array.isArray(env.runs))for(const r of env.runs)if(!RUN_LEDGER.find(x=>x.seed===r.seed&&x.name===r.name))RUN_LEDGER.push(r);
+      UI.screen="play";UI.modal=null;UI.prevTop={};
+      toast("Autosave restored — "+turnDate(G.turn).long+", turn "+G.turn+"/48.");render();break;}
   }
 });
 function execAction(a,choice,extra){
@@ -4912,10 +4932,23 @@ function execAction(a,choice,extra){
   spendSlots(G,a.slots);spendPC(G,a.pc);
   a.run(G,choice,extra);
   G.rngCalls=RNG.calls;
+  autosave();
   makeTicker(pre);
   UI.modal=null;render();
 }
-window.addEventListener("error",e=>{console.error("GS error:",e.message)});
+/* V3-P0: the error net — a thrown exception becomes a reproducible bug report, not a dead page */
+window.addEventListener("error",e=>{
+  console.error("GS error:",e.message);
+  try{
+    const dump=JSON.stringify({error:String(e.message),at:(e.filename||"").split("/").pop()+":"+e.lineno,
+      seed:G&&G.seed,turn:G&&G.turn,scenario:G&&G.scenario,lastAction:UI.lastAct||null,rngCalls:RNG&&RNG.calls,saveV:SAVE_VERSION});
+    UI.modal=`<div class="modal-back" data-act="closemodal"><div class="modal"><h2>Engine error</h2>
+    <p class="subtle" style="margin-bottom:8px">Something threw. Your game is intact — it autosaves locally after every month and every action, so at worst you replay one click. Copy the report below into a bug report; the seed and last action make the crash reproducible.</p>
+    <textarea style="width:100%;height:90px" spellcheck="false">${esc(dump)}</textarea>
+    <div style="margin-top:10px"><button data-act="closemodal">Close</button></div></div></div>`;
+    render();
+  }catch(_){/* if render itself is the thrower, leave the console error and stop — no loops */}
+});
 render();
 </script>
 </body>
