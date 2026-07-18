@@ -489,7 +489,7 @@ const TUNING={
   ELASTICITY_PER_PCT:1.1,   // $B/yr GF revenue per 1% sustained S&P deviation — PLACEHOLDER (DOC §2.2/§6.8: "tens of billions", no published mapping)
   REV_EXPECTED_12M:8,       // %/yr equity growth baked into the enacted "overly exuberant" forecast (LAO Nov 2025 framing)
   REV_DEV_MIN:-32, REV_DEV_MAX:20, // clamp on modeled annual deviation, $B
-  HAZARD0:0.018, HAZARD_RAMP:0.0035, // monthly correction hazard start/ramp (calibrated to "elevated" per DOC §6.6)
+  HAZARD0:0.018, // monthly correction hazard baseline ("elevated" per DOC §6.6); the rates cycle moves it from here
   DRIFT_EXUBERANT:0.008, VOL_EXUBERANT:0.028, // monthly drift/vol in the AI-surge regime
   // Prop 98 / Prop 2 plumbing (DOC §2.4, §6.5)
   P98_SHARE:0.40,           // ¢/$ of each revenue swing absorbed by the guarantee
@@ -1502,7 +1502,7 @@ function newGame(cfg){
       prop98:BASELINE.prop98_guarantee.v, maintFactor:0, pension:BASELINE.pension_unfunded.v,
       debt:BASELINE.debt_service.v, gimmicks:3.9, newTaxes:0, taxSigned:false,
       budget:{proposed:false,mix:null,solved:0,grade:null,enacted:false,late:0}},
-    market:{idx:100, peak:100, mode:"exuberant", hazard:TUNING.HAZARD0, corrLeft:0, corrRate:0, troughLeft:0, hist:[100], eras:[], revApplied:0},
+    market:{idx:100, peak:100, mode:"exuberant", hazard:TUNING.HAZARD0, corrLeft:0, corrRate:0, troughLeft:0, hist:[100], eras:[], revApplied:0, macro:{stance:"neutral", left:7, lastShock:null}},
     issues:{homeless:BASELINE.homeless_count.v, unshelt:BASELINE.homeless_unshelt.v,
       hmlShares:{la:45,bay:25,val:30}, // SHELF-3: LA county ~45%, Bay ~25%, Valley+rest ~30% of the PIT count
       mediCal:BASELINE.medi_cal.v, prison:BASELINE.prison_pct.v,
@@ -1764,18 +1764,77 @@ const LAG_FNS={
 };
 
 /* ===================== 13. MARKET & FISCAL WEATHER ===================== */
+/* MACRO-1: the market is not just the AI trade. A rates cycle shifts the odds under it,
+   exogenous shocks (oil, banks, tariffs) arrive from nowhere, and some years the froth
+   just digests — a January soft landing that resets the hazard clock. Crashes still
+   happen; they are no longer an appointment. */
+const MACRO_SHOCKS=[
+  {t:"oil",dropLo:0.03,dropHi:0.06,unemp:0.2,haz:0.010,
+   hl:"Oil shock: Brent clears $120 after a Gulf disruption",
+   bd:"Nothing California did, and nothing California can undo — but the state runs on the world's most expensive gasoline even in good months, and a crude spike lands here first and hardest. Airlines, logistics, and every earnings call that mentions 'input costs' sold off together. The pain arrives at the pump within three weeks; the political mail arrives within four."},
+  {t:"banks",dropLo:0.04,dropHi:0.07,unemp:0.15,haz:0.014,
+   hl:"A regional bank fails; the panic bid goes to Treasuries",
+   bd:"A mid-sized lender with a loan book full of half-empty office towers didn't make it to Friday. The FDIC worked the weekend, depositors were made whole, and the market spent the week asking which bank is next — a question that costs the indexes money every time it's asked. Sacramento's exposure is indirect but real: financial-sector bonuses are capital-gains fuel, and fear is not."},
+  {t:"trade",dropLo:0.025,dropHi:0.05,unemp:0.1,haz:0.008,agri:-4,
+   hl:"Tariff escalation: the retaliation lands on ports and farms",
+   bd:"A new round of tariffs drew a mirror-image response aimed, with some precision, at American agriculture and West Coast container traffic. The ports of LA and Long Beach move 40% of the nation's imports; the Central Valley grows what the retaliation targets. Two of California's engines took the hit in the same news cycle, and the index noticed."}];
+const CRASH_COV={
+  ai:{hl:"Markets: the air comes out of the AI trade",
+    bd:"A broad selloff hit technology names this month, and this time the dip-buyers did not show up. Analysts who spent two years explaining why valuations made sense are now explaining why they never said that. The Legislative Analyst's Office declined to gloat, which somehow made it worse."},
+  rates:{hl:"Markets: 'higher for longer' finally breaks the rally",
+    bd:"No single headline did it — just the arithmetic of a two-year Treasury out-yielding the dividend market while the Fed repeats the word 'patient.' Money that had no alternative found one, and left. The tech names fell furthest, as they always do, but this was a rates story wearing an AI costume, and the bond desks have been predicting it, smugly, for eighteen months."},
+  oil:{hl:"Markets: the oil shock becomes an earnings shock",
+    bd:"The crude spike worked through the system the way it always does — freight first, margins second, consumer last — and this month the earnings guidance finally said so out loud. The selloff that followed was orderly right up until it wasn't. Analysts note the AI names fell hardest, not because of oil, but because that's where the leverage lives."},
+  banks:{hl:"Markets: the bank scare finds the exit door",
+    bd:"What began as one failed regional lender became a repricing of the whole financial sector, and then — because everything is connected to everything at these valuations — of the market itself. Credit is tightening on its own now, doing the Fed's job without the Fed's permission. The LAO's note to the Legislature ran two paragraphs and the phrase 'revenue implications' appeared in both."},
+  trade:{hl:"Markets: the tariff math lands on the indexes",
+    bd:"The trade war stopped being an abstraction this month: guidance cuts from the shippers and the chipmakers put a number on it, and the market subtracted that number all at once. Export-heavy California catches this from both sides — the ports move less, the Valley sells less, and the capital gains that fund a tenth of the general fund shrink on cue."}};
 function stepMarket(g){
   const M=g.market;
+  if(!M.macro)M.macro={stance:"neutral",left:7,lastShock:null}; // saves from before MACRO-1
+  const mac=M.macro;
+  // the rates cycle: easing / neutral / tightening, shifting every 5–10 months
+  if(--mac.left<=0){
+    mac.stance=RNG.pick(["easing","neutral","tightening"].filter(s=>s!==mac.stance));
+    mac.left=RNG.int(5,10);
+    cov(g,"AP",mac.stance==="easing"?"The Fed pivots: rate cuts are back on the table"
+      :mac.stance==="tightening"?"The Fed turns hawkish: 'higher for longer' returns to the statement"
+      :"The Fed goes quiet: an extended pause, and markets left to their own devices",
+      mac.stance==="easing"?"Cheaper money re-inflates whatever was already inflated — good for the index, good for capital gains receipts, bad for anyone hoping the exuberance would end politely. Sacramento does not set monetary policy; Sacramento merely spends its consequences."
+      :mac.stance==="tightening"?"Gravity has been restored to the valuation debate. Every month of higher rates is a month the multiple has to justify itself with actual earnings, and the odds of it failing to do so tick upward. The state's revenue forecast, built on the fat years continuing, did not get a vote."
+      :"The committee said 'data dependent' eleven times and adjourned. Markets drift on their own momentum in a pause — which is fine, until the momentum is the problem.");
+  }
+  // exogenous shocks: oil, banks, tariffs — the things besides the AI trade
+  if((M.mode==="exuberant"||M.mode==="recovery")&&RNG.chance(0.015)){
+    const s=RNG.pick(MACRO_SHOCKS);
+    M.idx*=1-(s.dropLo+RNG.r()*(s.dropHi-s.dropLo));
+    g.issues.unemp=clamp(g.issues.unemp+s.unemp,3,12);
+    M.hazard=clamp(M.hazard+s.haz,0.008,0.20);
+    mac.lastShock={t:s.t,turn:g.turn};
+    if(s.agri)dAct(g,"agri",s.agri);
+    cov(g,"AP",s.hl,s.bd);
+  }
   if(M.mode==="exuberant"){
-    M.hazard+=TUNING.HAZARD_RAMP;
-    M.idx*=1+RNG.norm(TUNING.DRIFT_EXUBERANT,TUNING.VOL_EXUBERANT);
+    // hazard breathes with the stance instead of ramping to an appointment
+    const ramp=mac.stance==="tightening"?0.0045:mac.stance==="easing"?-0.0022:0.0010;
+    M.hazard=clamp(M.hazard+ramp,0.010,0.16);
+    const drift=TUNING.DRIFT_EXUBERANT+(mac.stance==="easing"?0.004:mac.stance==="tightening"?-0.004:0);
+    M.idx*=1+RNG.norm(drift,TUNING.VOL_EXUBERANT);
+    // January digestion: some years earnings catch up to the multiple and nothing breaks
+    if(g.turn%12===1&&M.hazard>TUNING.HAZARD0&&RNG.chance(0.30)){
+      M.hazard=TUNING.HAZARD0;
+      cov(g,"LAO","Soft landing, for now: earnings catch up to the multiple",
+        "The January data did something unusual: it justified the price. Profits grew into the valuations instead of the valuations shrinking to meet the profits, and the correction everyone penciled in got erased — not cancelled, the office stresses, erased in pencil. The revenue forecast breathes easier. The office recommends against spending the relief.");
+    }
     if(RNG.chance(M.hazard)){
       M.mode="correction";M.corrLeft=RNG.int(4,8);
       M.corrRate=(0.25+RNG.r()*0.15)/M.corrLeft;
       g.flags.marketCorrected=true;
       M.eras.push({start:g.turn}); // A2: era shading
-      cov(g,"AP","Markets: the air comes out of the AI trade",
-        "A broad selloff hit technology names this month, and this time the dip-buyers did not show up. Analysts who spent two years explaining why valuations made sense are now explaining why they never said that. The Legislative Analyst's Office declined to gloat, which somehow made it worse.",
+      // name the actual cause: a recent shock, the rates cycle, or the AI trade itself
+      const cause=(mac.lastShock&&g.turn-mac.lastShock.turn<=4)?mac.lastShock.t:(mac.stance==="tightening"?"rates":"ai");
+      const cc=CRASH_COV[cause]||CRASH_COV.ai;
+      cov(g,"AP",cc.hl,cc.bd,
         "MODEL NOTE: The %-equity-drawdown → $-revenue elasticity is not published anywhere; the LAO says only that a significant decline 'would reduce state revenues by tens of billions.' This engine uses a placeholder (~$11B/yr per sustained 10% drawdown, landing over 3–18 months). RESEARCH DOC §6.8.");
     }
   }else if(M.mode==="correction"){
@@ -3472,9 +3531,23 @@ const ACTIONS=[
       if(m.gathering)out.push({id:m.id+"|surge",nm:`${m.t} — surge the signature drive`,
         d:`Double the vendor crews for a month: +180,000 signatures immediately and a faster rate after. Currently ${m.sigsGot.toLocaleString()} of ${m.sigs.toLocaleString()} with the 180-day clock running.`,
         cost:g.player.chest>=3?"$3M from the war chest":"NEEDS $3M in the war chest — FUNDRAISE first"});
-      else if(m.electionTurn)out.push({id:m.id+"|campaign",nm:`${m.t} — barnstorm for the YES`,
-        d:`Your face in the ads, your voice on the stump${m.playerSpend>2?" (already campaigning — spend stacks)":""}. A CHA roll: success moves the projected YES about +0.8, and attaching yourself makes the measure a referendum on you — win or lose together.`,
-        cost:"CHA roll · +YES either way, more on a hit"});
+      else if(m.electionTurn){
+        out.push({id:m.id+"|campaign",nm:`${m.t} — barnstorm for the YES`,
+          d:`Your face in the ads, your voice on the stump${m.playerSpend>2?" (already campaigning — spend stacks)":""}. A CHA roll: success moves the projected YES about +0.8, and attaching yourself makes the measure a referendum on you — win or lose together.`,
+          cost:"CHA roll · +YES either way, more on a hit"});
+        out.push({id:m.id+"|ads",nm:`${m.t} — statewide ad blitz`,
+          d:"No roll, no stump, no risk — just money. $5M of airtime, mail, and digital moves the projected YES about +1.2. Repeatable for as long as the war chest holds; campaigns are won at the margins by whoever stopped writing checks last.",
+          cost:g.player.chest>=5?"$5M from the war chest → +1.2 projected YES":"NEEDS $5M — FUNDRAISE first"});
+        const foes=(m.oppose||[]).filter(o=>g.actors[o]<=-20);
+        if(foes.length){const tgt=foes.sort((a,b)=>g.actors[a]-g.actors[b])[0];
+          out.push({id:m.id+"|dealout",nm:`${m.t} — buy off ${ACTORS.find(a=>a.id===tgt).nm}`,
+            d:`Their funded NO campaign is worth −6 on election night. A quiet accommodation — a carve-out, an appointment, a bill you'll sign — takes them off the battlefield entirely and warms the relationship. If the offer leaks, you wear it.`,
+            cost:"5 PC extra · COA roll · removes their −6 for good"});}
+        if(ACTORS.some(a=>g.actors[a.id]>=40)&&!m.endorsed)
+          out.push({id:m.id+"|endorse",nm:`${m.t} — rally the coalition's endorsements`,
+            d:`Every actor above +40 standing cuts an ad, signs the ballot argument, and puts their field program on it. Their money, not yours. Once per measure — endorsements don't re-announce.`,
+            cost:"free · allies ≥+40 spend for you · +0.8 projected YES"});
+      }
     }
     return out;},
   run:(g,c)=>{const cut=c.lastIndexOf("|"),mid=c.slice(0,cut),verb=c.slice(cut+1);
@@ -3491,7 +3564,29 @@ const ACTIONS=[
         cov(g,"AP",`The governor goes all-in on "${m.t}"`,
           "Three markets in two days, your face in the closing ad, and the measure now reads as YOUR measure — which moves its number and raises its stakes in the same motion. The consultants call this 'coattails.' The opposition calls it 'a target.' Both are right.");}
       else cov(g,"Politico",`The measure tour lands soft`,
-          `The rallies happened; the clips led with the protesters outside. The YES number inches up on organization alone, but the big move didn't come. There is another month, until there isn't.`);}}},
+          `The rallies happened; the clips led with the protesters outside. The YES number inches up on organization alone, but the big move didn't come. There is another month, until there isn't.`);}
+    else if(verb==="ads"){
+      if(g.player.chest<5){cov(g,"Politico","The ad buy dies in accounting","The consultants sent a media plan; the war chest sent regrets. FUNDRAISE, then flood the airwaves.");return;}
+      g.player.chest-=5;m.playerSpend=(m.playerSpend||0)+3;
+      cov(g,"CalMatters",`$5M hits the air for "${m.t}"`,
+        "Statewide broadcast, targeted digital, and the mail piece with the schoolteacher in it. No message evolves after Labor Day — the buy just keeps the number climbing while the other side's donors decide how much they hate you. Repeat as funded.");}
+    else if(verb==="dealout"){
+      spendPC(g,5);
+      const foes=(m.oppose||[]).filter(o=>g.actors[o]<=-20).sort((a,b)=>g.actors[a]-g.actors[b]);
+      const tgt=foes[0];if(!tgt)return;
+      const r=roll(g,"COA",0.15,0);
+      if(r.ok){m.oppose=m.oppose.filter(x=>x!==tgt);dAct(g,tgt,6);
+        cov(g,"Politico",`${ACTORS.find(a=>a.id===tgt).nm} goes quiet on "${m.t}"`,
+          "The NO campaign's biggest funder announced it will 'focus resources elsewhere this cycle.' Nobody announces what it cost you — a carve-out here, a courtesy there — but the ad reservations were cancelled by Friday. Their −6 on election night just left the field.");}
+      else{dAp(g,-0.5);
+        cov(g,"AP",`Leaked: the governor offered ${ACTORS.find(a=>a.id===tgt).nm} a deal to stand down`,
+          "The term sheet reached a reporter before it reached their board. The opposition now has a corruption frame for its closing ad, the group stays in the fight, and your consultants have started using the word 'containment.'");}}
+    else if(verb==="endorse"){
+      if(m.endorsed)return;
+      const allies=ACTORS.filter(a=>g.actors[a.id]>=40);if(!allies.length)return;
+      m.endorsed=true;m.playerSpend=(m.playerSpend||0)+2;
+      cov(g,"CalMatters",`The coalition goes to work for "${m.t}"`,
+        `${allies.slice(0,3).map(a=>a.nm).join(", ")}${allies.length>3?" and others":""} signed the ballot argument, cut the ads, and turned their field programs loose — independent expenditures you legally couldn't coordinate and didn't have to. Standing above +40 means they work for the agenda because it's theirs too.`);}}},
  {id:"oppose",nm:"Oppose a Hostile Measure",cat:"Political",slots:1,pc:4,
   when:g=>g.measures.hostile.length?true:"No hostile measure pending",
   run:(g,c)=>{const m=g.measures.hostile.shift();g.player.chest=Math.max(0,g.player.chest-5);dAp(g,0.5);
@@ -3992,7 +4087,7 @@ function statTiles(g,apDelta){
     ${g.fiscal.deficit<0
       ?tile("OPERATING SURPLUS",fmtB(Math.abs(g.fiscal.deficit),1),`<span class="delta-up">/yr · inherited a $${g.inheritedDeficit}B deficit</span>`,spark(g.hist.deficit,150,26,"var(--good)",{eras:M.eras,fill:1,fmt:v=>fmtB(v,1)}),"acc-aqua")
       :tile("STRUCTURAL DEFICIT",fmtB(g.fiscal.deficit,1),`<span class="subtle">/yr · inherited $${g.inheritedDeficit}B</span>`,spark(g.hist.deficit,150,26,"var(--red)",{eras:M.eras,fill:1,fmt:v=>fmtB(v,1)}),"crit acc-red")}
-    ${tile("MARKET (AI SURGE)",M.idx.toFixed(0),`<span class="${M.mode==="exuberant"?"delta-up":M.mode==="recovery"?"subtle":"delta-dn"}">${M.mode}</span>`,spark(M.hist,150,26,M.mode==="exuberant"?"var(--aqua)":"var(--red)",{eras:M.eras,fill:1}),M.mode==="exuberant"?"acc-aqua":"acc-red")}
+    ${tile("MARKET · FED "+((M.macro&&M.macro.stance)||"neutral").toUpperCase(),M.idx.toFixed(0),`<span class="${M.mode==="exuberant"?"delta-up":M.mode==="recovery"?"subtle":"delta-dn"}">${M.mode}</span>`,spark(M.hist,150,26,M.mode==="exuberant"?"var(--aqua)":"var(--red)",{eras:M.eras,fill:1}),M.mode==="exuberant"?"acc-aqua":"acc-red")}
     ${tile("POLITICAL CAPITAL",g.pc,`<span class="subtle">honeymoon ${g.honeymoon>0?g.honeymoon+" mo left":"over"}</span>`,spark(g.hist.pc,150,26,"var(--violet)",{fill:1}),"acc-violet")}
   </div>`;
 }
