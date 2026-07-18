@@ -972,6 +972,107 @@ const BILL_POOL=[
   backers:["progs","caoc"],opps:["tech","chamber"],
   sign:{act:{progs:6,caoc:5,tech:-8,chamber:-4},ap:0,gf:0},
   veto:{act:{progs:-6,tech:6,chamber:4},ap:0}},
+ /* ---- LEG-4: twenty more bills, with the fiscal sign stated on the label — revenue, cost, or neutral ---- */
+ {id:"b_ihss",num:"AB 1672",t:"IHSS Wage Pass-Through Act",topic:"health",
+  d:"State pass-through of county IHSS wage increases — 600,000 caregivers, SEIU's top bill three years running.",
+  backers:["seiu","progs"],opps:["mods","localgov"],
+  sign:{act:{seiu:10,progs:6,mods:-4,localgov:-3},ap:0,gf:-0.6},
+  veto:{act:{seiu:-12,progs:-6,mods:4},ap:0}},
+ {id:"b_freecc",num:"SB 850",t:"Community College Free-Tuition Expansion",topic:"education",
+  d:"Extends the fee waiver to all first-time, full-time students regardless of income.",
+  backers:["cft","progs"],opps:["mods"],
+  sign:{act:{cft:8,progs:6,mods:-3},ap:1,gf:-0.5},
+  veto:{act:{cft:-8,progs:-5},ap:-1}},
+ {id:"b_wildcam",num:"AB 297",t:"Wildfire Detection Network Act",topic:"insurance",
+  d:"Statewide AI camera and sensor coverage for early ignition detection — the cheap end of fire policy.",
+  backers:["energy","localgov"],opps:[],
+  sign:{act:{energy:4,localgov:4},ap:0.5,gf:-0.15,issue:{insurBoost:4}},
+  veto:{act:{localgov:-4},ap:-0.5}},
+ {id:"b_procure",num:"SB 1425",t:"Procurement Modernization Act",topic:"economy",
+  d:"Consolidated purchasing, reverse auctions, and a ban on the change-order economics that made FI$Cal famous. Real savings, no constituency.",
+  backers:["chamber","mods"],opps:[],
+  sign:{act:{chamber:4,mods:4},ap:0,gf:0.3},
+  veto:{act:{mods:-3},ap:0}},
+ {id:"b_alcohol",num:"AB 62",t:"Alcohol Excise Modernization",topic:"tax",needs23:true,
+  d:"Indexes alcohol excise rates frozen since 1991 to inflation — a 2/3 revenue measure (~$0.7B/yr).",
+  backers:["progs","hosp"],opps:["chamber","gop"],
+  sign:{act:{progs:5,hosp:4,chamber:-6,gop:-5},ap:-0.5,gf:0.7,tax:true},
+  veto:{act:{progs:-5,chamber:5},ap:0.5}},
+ {id:"b_guns",num:"AB 28-B",t:"Firearm Excise for School Safety",topic:"justice",yr:2028,needs23:true,legOnly:true,
+  d:"An 11% state excise on firearms and ammunition, dedicated to school security and violence intervention.",
+  backers:["progs","cta"],opps:["gop"],
+  sign:{act:{progs:6,cta:4,gop:-10},ap:0.5,gf:0.5,tax:true},
+  veto:{act:{progs:-8,cta:-4,gop:8},ap:-0.5}},
+ {id:"b_swipe",num:"SB 1178",t:"Swipe-Fee Cap for Small Business",topic:"economy",yr:2028,legOnly:true,
+  d:"Caps interchange fees on the sales-tax portion of card transactions. Merchants cheer; the banks' lobby discovers California.",
+  backers:["chamber"],opps:["tech"],
+  sign:{act:{chamber:6,tech:-3},ap:0.5,gf:0},
+  veto:{act:{chamber:-6},ap:0}},
+ {id:"b_mfgcredit",num:"AB 52-B",t:"Advanced Manufacturing Tax Credit",topic:"economy",yr:2028,
+  d:"Refundable credits for battery, semiconductor, and clean-tech plants siting in-state.",
+  backers:["chamber","trades","tech"],opps:["progs"],
+  sign:{act:{chamber:8,trades:5,tech:5,progs:-4},ap:0,gf:-0.4},
+  veto:{act:{chamber:-8,trades:-5},ap:0}},
+ {id:"b_erpo",num:"AB 1014-B",t:"Red-Flag Order Modernization",topic:"justice",yr:2028,legOnly:true,
+  d:"Streamlines gun-violence restraining orders and closes the relinquishment verification gap.",
+  backers:["progs","mods"],opps:["gop"],
+  sign:{act:{progs:5,mods:3,gop:-6},ap:0.5,gf:0},
+  veto:{act:{progs:-6,gop:5},ap:-0.5}},
+ {id:"b_interp",num:"SB 380",t:"Court Access & Interpreter Funding",topic:"justice",yr:2028,
+  d:"Funds interpreters and self-help centers in every courthouse — the justice system's least glamorous bottleneck.",
+  backers:["caoc","progs"],opps:[],
+  sign:{act:{caoc:4,progs:3},ap:0,gf:-0.15},
+  veto:{act:{caoc:-4},ap:0}},
+ {id:"b_npscope",num:"AB 890-B",t:"Nurse Practitioner Full-Practice Act",topic:"health",yr:2029,
+  d:"Full independent practice authority — the workforce answer to a physician desert covering a third of the state.",
+  backers:["seiu","mods"],opps:["hosp"],
+  sign:{act:{seiu:4,mods:4,hosp:-4},ap:0.5,gf:0.1,issue:{medicalBoost:0.1}},
+  veto:{act:{seiu:-4,hosp:4},ap:0}},
+ {id:"b_recycle",num:"SB 1157-B",t:"Water Recycling & Storage Acceleration",topic:"water",yr:2029,
+  d:"Fast-tracks potable reuse and off-stream storage — the drought answer everyone claims to support.",
+  backers:["water","agri","mods"],opps:["enviro"],
+  sign:{act:{water:8,agri:6,mods:3,enviro:-4},ap:0,gf:-0.35},
+  veto:{act:{water:-8,agri:-6},ap:0}},
+ {id:"b_filmsunset",num:"AB 9",t:"Film Credit Sunset & Redirect",topic:"economy",yr:2029,
+  d:"Sunsets the $750M film credit the LAO has called ineffective for a decade and redirects it to the General Fund. A CUT, on purpose, with names attached.",
+  backers:["mods"],opps:["ent","trades"],
+  sign:{act:{mods:5,ent:-12,trades:-4},ap:-0.5,gf:0.75},
+  veto:{act:{ent:8,trades:3,mods:-4},ap:0}},
+ {id:"b_zevfleet",num:"SB 233-C",t:"State Fleet ZEV Conversion Mandate",topic:"energy",yr:2029,
+  d:"Converts the state's 50,000-vehicle fleet to zero-emission on a fixed schedule.",
+  backers:["enviro"],opps:["chamber"],
+  sign:{act:{enviro:8,chamber:-4},ap:0,gf:-0.2,issue:{grid:-1}},
+  veto:{act:{enviro:-8},ap:0}},
+ {id:"b_payday",num:"AB 539-B",t:"Payday Lending Rate Cap",topic:"economy",yr:2029,legOnly:true,
+  d:"Caps small-dollar loan rates at 36% APR. The industry's business model is the objection.",
+  backers:["progs"],opps:["chamber"],
+  sign:{act:{progs:6,chamber:-4},ap:1,gf:0},
+  veto:{act:{progs:-8},ap:-1}},
+ {id:"b_estate",num:"AB 310-B",t:"Estate Tax Conformity Act",topic:"tax",yr:2030,needs23:true,
+  d:"Reinstates a state estate tax to the federal exemption line — a 2/3 revenue measure (~$2.2B/yr) aimed at exactly the people who fund initiative campaigns.",
+  backers:["progs","cta","seiu"],opps:["chamber","tech","gop"],
+  sign:{act:{progs:12,cta:6,seiu:6,chamber:-12,tech:-10,gop:-8},ap:-0.5,gf:2.2,tax:true},
+  veto:{act:{progs:-12,chamber:10,tech:8},ap:0.5}},
+ {id:"b_juvie",num:"SB 823-B",t:"Juvenile Realignment Completion",topic:"justice",yr:2030,
+  d:"Closes the last state youth facilities, shifts custody to counties with funding — and books the savings.",
+  backers:["progs"],opps:["ccpoa","gop"],
+  sign:{act:{progs:6,ccpoa:-6,gop:-4},ap:0,gf:0.3,issue:{prisonRelief:1}},
+  veto:{act:{progs:-6,ccpoa:4},ap:0}},
+ {id:"b_fairhubs",num:"AB 2120",t:"Fairgrounds Resilience Hub Act",topic:"economy",yr:2030,
+  d:"Retrofits county fairgrounds as evacuation and cooling centers — rural infrastructure with a disaster dividend.",
+  backers:["localgov","agri"],opps:[],
+  sign:{act:{localgov:6,agri:4},ap:0.5,gf:-0.1},
+  veto:{act:{localgov:-5,agri:-3},ap:0}},
+ {id:"b_calcompute",num:"SB 1047-C",t:"CalCompute Public AI Institute",topic:"tech",yr:2030,
+  d:"A public compute cluster and AI research institute at the UC — keep the frontier's public-interest wing in-state.",
+  backers:["tech","cft"],opps:["mods"],
+  sign:{act:{tech:8,cft:4,mods:-3},ap:0,gf:-0.25},
+  veto:{act:{tech:-6,cft:-3},ap:0}},
+ {id:"b_carecourt",num:"SB 1338-B",t:"CARE Court Expansion Act",topic:"homeless",yr:2030,
+  d:"Expands court-ordered treatment plans statewide with housing attached — the sharp end of homelessness policy.",
+  backers:["mayors","mods"],opps:["progs","caoc"],
+  sign:{act:{mayors:6,mods:4,progs:-5,caoc:-4},ap:1,gf:-0.3,issue:{homelessBoost:3}},
+  veto:{act:{mayors:-6,progs:4},ap:-1}},
 ];
 
 /* ===================== 8. BALLOT MEASURES (player-qualified) ===================== */
@@ -2285,7 +2386,12 @@ function billEffSummary(fx){ // ACT-2: what a signature actually puts on the boo
   if(fx.gf)parts.push(`GF ${fx.gf>0?"+":""}${fx.gf}B/yr`);
   const nm={housingBoost:"housing",homelessBoost:"homelessness",insurBoost:"insurance",medicalBoost:"Medi-Cal",prisonRelief:"prison relief",grid:"grid",pensionCut:"pension"};
   for(const[k,v]of Object.entries(fx.issue||{}))if(nm[k])parts.push(`${nm[k]} ${v>0?"+":""}${v} on the books`);
+  if(!parts.length)parts.push("fiscally neutral — the fight was about power, not money");
   return parts.join(" · ");
+}
+function billFiscalTag(b){ // LEG-4: every bill wears its fiscal sign on the label
+  const gf=b.sign&&b.sign.gf;
+  return gf>0?`raises ${fmtB(gf)}/yr`:gf<0?`costs ${fmtB(-gf)}/yr`:"fiscally neutral";
 }
 function billDied(g,b,how){
   // REAL-LEG-1: the Legislature runs two-year sessions. A bill that stalls in committee or on the
@@ -3153,9 +3259,12 @@ const ACTIONS=[
     const deadY=g.bills.deadSess||{};
     const avail=BILL_POOL.filter(b=>!b.legOnly&&(b.yr||2027)<=y&&!g.bills.enactedIds.includes(b.id)&&!inPlay.has(b.id)&&deadY[b.id]!==y)
       .slice().sort((a,b)=>((b.yr||2027)-(a.yr||2027))||(a.topic<b.topic?-1:1));
-    const base=avail.map(b=>({id:b.id,
-      nm:`${b.t} (${b.num})${(b.yr||2027)===y&&y>2027?" · NEW THIS SESSION":""}`,
-      d:b.d,cost:b.needs23?"NEEDS 2/3 — 54 & 27":"committee → suspense → floor → desk · PUSH LEGISLATION moves it once it's in"}));
+    const base=avail.map(b=>{
+      const failedBefore=Object.prototype.hasOwnProperty.call(deadY,b.id)||g.bills.vetoed.includes(b.id);
+      return {id:b.id,
+      nm:`${b.t} (${b.num})${(b.yr||2027)===y&&y>2027?" · NEW THIS SESSION":""}${failedBefore?" · REINTRODUCTION":""}`,
+      d:b.d+(failedBefore?" (Failed before — died in process or met your veto. Reintroduction is how this building works; enacted laws never reappear here.)":""),
+      cost:`${billFiscalTag(b)}${b.needs23?" · NEEDS 2/3 — 54 & 27":" · committee → suspense → floor → desk"}`};});
     for(const uid of ["b_insur","b_medbackfill","b_backstop"]){ // MISS-4: urgency statutes — 2/3, immediate effect, no calendar
       const b=BILL_POOL.find(x=>x.id===uid);
       if((b.yr||2027)<=y&&!g.bills.enactedIds.includes(uid)&&!inPlay.has(uid)&&deadY[uid]!==y){
@@ -4107,7 +4216,7 @@ function setpiece(g,d){
   <p class="subtle">The single biggest decision volume of the year. Unsigned bills become law WITHOUT your signature at month's end. Signing and vetoing costs no action slots — only consequences.</p>
   ${g.bills.desk.map((b,i)=>`<div class="bill"><div class="bt">${b.num} — ${b.t} ${b.sponsored?'<span class="pill" style="color:var(--aqua)">YOUR BILL</span>':""}${b.amended?'<span class="pill" style="color:var(--violet);border-color:var(--violet)" title="Watered down to pass — effects at ~60% of the introduced version">AS AMENDED</span>':""}${b.needs23?'<span class="pill" style="color:var(--warn)">passed with 2/3</span>':""}${b.floorVotes?` <span class="subtle num" style="font-size:10px">(${b.floorVotes.asm}–${79-b.floorVotes.asm})</span>`:""}</div>
     <div class="bwho">FOR: ${b.backers.map(x=>ACTORS.find(a=>a.id===x).nm).join(", ")} · AGAINST: ${b.opps.map(x=>ACTORS.find(a=>a.id===x).nm).join(", ")}</div>
-    <div style="font-size:12px;margin:3px 0">${b.d}${b.sign.gf?` <span class="num" style="color:${b.sign.gf>0?"var(--good)":"var(--red)"}">(GF ${b.sign.gf>0?"+":""}${b.sign.gf}B/yr)</span>`:""}</div>
+    <div style="font-size:12px;margin:3px 0">${b.d} ${b.sign.gf?`<span class="num" style="color:${b.sign.gf>0?"var(--good)":"var(--red)"}">(GF ${b.sign.gf>0?"+":""}${b.sign.gf}B/yr)</span>`:`<span class="subtle" style="font-size:10px">(fiscally neutral)</span>`}</div>
     <button class="primary" data-act="bill" data-i="${i}" data-dec="sign">Sign</button>
     <button class="danger" data-act="bill" data-i="${i}" data-dec="veto">Veto</button></div>`).join("")}</div>`;
 }
