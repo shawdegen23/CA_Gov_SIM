@@ -759,6 +759,49 @@ const WALLS=[
  {id:"w_market",nm:"Make the revenue arrive on schedule",cat:"Reality",
   txt:"The LAO's deputy is patient with you. “The personal income tax is five times more volatile than personal income itself. Half of it comes from the top one percent. Capital gains arrive when the market says they arrive — mostly in April, sometimes not at all. The state has been trying to fix its exposure to this since 2009.” She gestures at the window, in the general direction of the S&P 500. “The weather does not negotiate.”"},
 ];
+/* WALL-1: testing a limit is no longer free theater. The ask can LEAK — "the governor privately
+   explored X" is a story with victims — and a couple of walls teach you something worth having.
+   First test of each wall rolls once; re-reading the memo later is safe. */
+const WALL_FX={
+ w_prop13:{leakP:0.5,hl:"Governor privately explored touching Prop 13",
+   bd:"Three people were in the room and one of them talks. Every homeowner group in the state read the same story at breakfast, the Chamber's tax committee scheduled an emergency call, and the progressives quietly noted you're at least asking the right forbidden questions. The office denies everything, which confirms everything.",
+   fx:g=>{dAct(g,"chamber",-4);dAct(g,"gop",-6);dAct(g,"tenants",3);dAct(g,"progs",4);dAp(g,-1);}},
+ w_prop98:{leakP:0.45,hl:"Leak: the horseshoe war-gamed suspending Prop 98",
+   bd:"With the teachers' unions, the question IS the betrayal. CTA's president called it 'a knife shown to every classroom in California' before lunch. That the answer was 'we can't' saved nothing — they now know you asked.",
+   fx:g=>{dAct(g,"cta",-8);dAct(g,"cft",-5);dAp(g,-0.5);}},
+ w_ag:{leakP:0.35,hl:"Governor's office asked whether the AG can be 'directed'",
+   bd:"The Attorney General's office responded with a two-line statement about constitutional independence and a longer memory. The trial lawyers noticed. So did the Commission on Judicial Appointments, where the AG holds a vote on your next nominee.",
+   fx:g=>{dAct(g,"caoc",-4);g.legStanding-=2;g.flags.agGrudge=true;}},
+ w_lara:{leakP:0.35,hl:"Report: horseshoe probed 'options' on a pending rate filing",
+   bd:"A discoverable call that was never made, about a rate case you don't control — but the carriers priced the signal anyway: political interference risk, California file. The Commissioner's office issued a statement defending its independence, at your expense.",
+   fx:g=>{dAct(g,"energy",-4);g.issues.insur=clamp(g.issues.insur-1.5,0,100);}},
+ w_receiver:{leakP:0.4,hl:"Governor asked counsel about defying the prison Receiver",
+   bd:"The word 'contempt' appears four times in the leaked memo, once underlined. The receivership bar noticed; the progressive caucus called it 'flirting with a constitutional crisis'; CCPOA, privately, loved it. The three-judge panel reads the papers too.",
+   fx:g=>{dAct(g,"progs",-5);dAct(g,"ccpoa",3);dAp(g,-1);}},
+ w_tax:{leakP:0.4,hl:"Leak: governor floated revenue 'by executive action'",
+   bd:"The Chamber's job-killer list grew a preamble. The moderates — who spend their careers explaining that taxes need 54 votes — resented doing constitutional-law cleanup for the horseshoe. Counsel's memo was right; the leak of the question was the damage.",
+   fx:g=>{dAct(g,"chamber",-6);dAct(g,"mods",-4);dAp(g,-0.5);}},
+ w_bsa:{leakP:0.25,hl:"Finance war-gamed a rainy-day raid, memo shows",
+   bd:"The moderates read 'BSA withdrawal scenarios' and reached for their op-ed templates. Mild, as leaks go — every Finance shop runs these numbers — but the timing writes the headline.",
+   fx:g=>{dAct(g,"mods",-3);},
+   upside:g=>{if(!g.flags.bsaBriefed){g.flags.bsaBriefed=true;return "Your Finance director walks you through the Prop 2 machinery properly — declaration, majority vote, the 50% cap, the consecutive-year rules. THE BRIEFING STICKS: your next budget-emergency declaration will be executed cleanly (no approval cost).";}return null;}},
+ w_zoning:{leakP:0.4,hl:"'Executive rezoning' memo escapes the horseshoe",
+   bd:"Four hundred and eighty-two city attorneys performed outrage; the League of Cities booked ad time. The YIMBYs, on the other hand, made you a meme captioned 'let him cook.' Net: the locals trust you less and the housing movement likes you more.",
+   fx:g=>{dAct(g,"localgov",-5);dAct(g,"mayors",-3);dAct(g,"yimby",5);}},
+ w_cba:{leakP:0.45,hl:"Leak: administration explored 'contract flexibility' on state MOUs",
+   bd:"SEIU read 'flexibility' as 'furloughs' — because that is what it always means — and CCPOA read it as an opening bid. The Chamber applauded, which made it worse. The bargaining tables just got longer.",
+   fx:g=>{dAct(g,"seiu",-8);dAct(g,"ccpoa",-4);dAct(g,"chamber",4);}},
+ w_appropriate:{leakP:0.3,hl:"Controller pointedly re-circulates warrant rules after horseshoe inquiry",
+   bd:"The Controller's office responded to your counsel's question by publishing a 'refresher' on constitutional appropriations — the bureaucratic equivalent of a raised eyebrow, distributed to every agency CFO in the state.",
+   fx:g=>{dAct(g,"mods",-3);dAp(g,-0.5);}},
+ w_fedfunds:{leakP:0.35,hl:"Washington hears Sacramento asked about 'flexibility' on federal funds",
+   bd:"The federal administration's grant reviewers added a tab to your file. The delegation — which spends its credibility defending California's stewardship of $175B — was not consulted and is not amused.",
+   fx:g=>{dAct(g,"fedadmin",-4);dAct(g,"deleg",-3);}},
+ w_market:{leakP:0.15,hl:"Governor summons the LAO for a revenue-volatility tutorial",
+   bd:"The rare leak that lands well: the person holding the checkbook asked the scorekeepers how the weather works. The building files it under 'takes the job seriously.'",
+   fx:g=>{dAp(g,-0.3);},
+   upside:g=>{if(!g.flags.laoBriefed){g.flags.laoBriefed=true;g.pc=clamp(g.pc+2,0,110);return "The LAO deputy stays ninety minutes past the meeting. You finally, actually understand the revenue weather — and the building hears you asked. +2 PC, once. Governors who respect the arithmetic get respected back.";}return null;}},
+};
 /* ===================== 7. BILL POOL (September desk + sponsorable) ===================== */
 /* fx fields: act = actor standing deltas; ap = approval delta; gf = annual GF delta ($B, + = revenue/savings);
    issue = issue mutations applied via lag queue. needs23 = requires 2/3 (tax). */
@@ -1093,7 +1136,34 @@ const MEASURES=[
  {id:"m_insurance",t:"Insurance Availability & Wildfire Resilience Act",type:"STAT",sigs:546651,
   d:"Statutory overhaul of rate review + a wildfire resilience bond.",
   yesFx:{act:{energy:12,caoc:-10},issue:{insurBoost:20}},oppose:["caoc"],baseYes:55},
+ /* BALLOT-1: the ballot is how California actually raises revenue around a stuck Legislature —
+    a majority of voters instead of 54 and 27. Every measure now carries its fiscal sign. */
+ {id:"m_splitroll",t:"Commercial Property Tax Fairness Act (Split Roll)",type:"ICA",sigs:874641,
+  d:"Reassesses commercial and industrial property at market value; homes untouched. The 2020 rematch, with the $4B/yr on the label this time.",
+  yesFx:{act:{chamber:-25,agri:-10,cta:15,seiu:12,progs:12},fiscal:{deficitCut:4}},oppose:["chamber","agri"],baseYes:47},
+ {id:"m_millionaire",t:"Millionaire Surtax for Wildfire Resilience",type:"STAT",sigs:546651,
+  d:"1% surtax above $5M, dedicated to home hardening, FAIR Plan stabilization, and the General Fund backstop.",
+  yesFx:{act:{tech:-12,chamber:-8,progs:10},fiscal:{deficitCut:1.2},issue:{insurBoost:6}},oppose:["tech","chamber"],baseYes:55},
+ {id:"m_oilsev",t:"Oil Severance Tax Act",type:"STAT",sigs:546651,
+  d:"California is the only major producer without one. 8% at the wellhead, ~$1.5B/yr, and a war with the industry priced in.",
+  yesFx:{act:{energy:-20,chamber:-8,enviro:12},fiscal:{deficitCut:1.5}},oppose:["energy","chamber"],baseYes:51},
+ {id:"m_sportsbet",t:"Sports Wagering & Revenue Act",type:"STAT",sigs:546651,
+  d:"Legalizes online sports betting under state license — the 2022 measures' graveyard, retried with the tribes inside the tent.",
+  yesFx:{act:{localgov:-6},fiscal:{deficitCut:0.8}},oppose:["localgov"],baseYes:49},
+ {id:"m_housingbond",t:"Affordable Housing Bond ($10B)",type:"STAT",sigs:546651,
+  d:"General-obligation bond for affordable and supportive housing. Bonds are not free money: ~$0.15B/yr in debt service, on the books for thirty years.",
+  yesFx:{act:{yimby:10,trades:8,tenants:6},issue:{housingBoost:10},fiscal:{deficitAdd:0.15}},oppose:["chamber"],baseYes:56},
+ {id:"m_climatebond",t:"Climate Resilience Bond ($12B)",type:"STAT",sigs:546651,
+  d:"Hardening, water, coastal defense. Popular, useful, and ~$0.2B/yr of debt service the LAO will mention annually.",
+  yesFx:{act:{enviro:12,localgov:6},issue:{insurBoost:8},fiscal:{deficitAdd:0.2}},oppose:["chamber"],baseYes:54},
+ {id:"m_services",t:"Tax Modernization Act (services base swap)",type:"ICA",sigs:874641,
+  d:"Extends sales tax to business services while cutting the rate — the volatility fix every commission has recommended and every Legislature has fled. ~$6B/yr net.",
+  yesFx:{act:{chamber:-20,tech:-12,caoc:-8,mods:6},fiscal:{deficitCut:6}},oppose:["chamber","tech","caoc"],baseYes:40},
 ];
+function measureFiscalTag(m){const f=m.yesFx&&m.yesFx.fiscal;
+  if(f&&f.deficitCut)return `raises ${fmtB(f.deficitCut)}/yr — majority of VOTERS, not 54 & 27`;
+  if(f&&f.deficitAdd)return `bond — ${fmtB(f.deficitAdd)}/yr debt service for 30 years`;
+  return "fiscal: indirect";}
 
 /* ===================== 9. SCRIPTED CALENDAR NOTES (per §6) ===================== */
 function nextDeadline(g){
@@ -2527,7 +2597,13 @@ function resolveMeasures(g){
       // ACT-2: voter-approved measures are law — permanent, and harder to repeal than anything you sign
       if(m.yesFx.issue&&m.yesFx.issue.housingBoost)queue(g,4,{k:"law",key:"lawHousing",d:m.yesFx.issue.housingBoost},"measure takes effect: housing ("+m.t+")","you");
       if(m.yesFx.issue&&m.yesFx.issue.insurBoost)queue(g,4,{k:"law",key:"lawInsur",d:m.yesFx.issue.insurBoost},"measure takes effect: insurance ("+m.t+")","you");
-      if(m.yesFx.fiscal&&m.yesFx.fiscal.deficitCut)g.fiscal.deficit=Math.max(0,g.fiscal.deficit-m.yesFx.fiscal.deficitCut);
+      // BALLOT-1: voter-approved fiscal effects are real and permanent — revenue lands, bonds bill you
+      if(m.yesFx.fiscal&&m.yesFx.fiscal.deficitCut){g.fiscal.deficit=clamp(g.fiscal.deficit-m.yesFx.fiscal.deficitCut,-18,99);
+        cov(g,"LAO",`Voter-approved revenue lands: ${fmtB(m.yesFx.fiscal.deficitCut)}/yr, no supermajority required`,
+          `"${m.t}" writes ${fmtB(m.yesFx.fiscal.deficitCut)} a year into the revenue base by simple majority of the electorate — the route around the 54-and-27 problem that California has used since 1978, cutting in both directions. The office notes, for the record, that voter-dedicated revenue is also voter-locked: this money is now beyond the reach of your successors, including you.`);}
+      if(m.yesFx.fiscal&&m.yesFx.fiscal.deficitAdd){g.fiscal.deficit=clamp(g.fiscal.deficit+m.yesFx.fiscal.deficitAdd,-18,99);
+        cov(g,"LAO",`The bond passed; the debt service starts: ${fmtB(m.yesFx.fiscal.deficitAdd)}/yr`,
+          `General-obligation bonds are borrowed money with a ballot blessing. The projects are real; so is the ~30-year debt service line that begins now and outlasts everyone currently employed in the building.`);}
       m.passed=true;
     }else{dAp(g,-2);}
   }
@@ -3021,8 +3097,9 @@ const ACTIONS=[
         r.ok?"Mutual aid flowing, procurement rules suspended, a command post with the governor visibly in it. Crises are the one genre where the office's power matches its billing — and competence is legible on camera."
         :"The declaration came fast; the execution wobbled. Two counties waited days for resources while the paperwork found itself. The bar for emergencies is Newsom-at-the-fires, and the clips are unforgiving.");
       queue(g,3,{k:"fn",fn:"_clearEmergency"});}
-    else{g.flags.fiscalEmergency=true;g.flags.fiscalEmergencyY=turnDate(g.turn).y;dAp(g,-1);
-      cov(g,"CalMatters","Governor declares a budget emergency","The Prop 2 predicate is now in place: a majority of each house can authorize a rainy-day withdrawal — capped at half the balance in year one. The declaration itself is a headline your opponents will laminate.");}}},
+    else{g.flags.fiscalEmergency=true;g.flags.fiscalEmergencyY=turnDate(g.turn).y;
+      if(!g.flags.bsaBriefed)dAp(g,-1); // WALL-1: the Finance briefing (Test the Limits) makes this clean
+      cov(g,"CalMatters","Governor declares a budget emergency",(g.flags.bsaBriefed?"Executed exactly by the Prop 2 book — the declaration your Finance director walked you through, delivered without a stumble the opposition could clip. ":"")+"The Prop 2 predicate is now in place: a majority of each house can authorize a rainy-day withdrawal — capped at half the balance in year one. The declaration itself is a headline your opponents will laminate.");}}},
  {id:"bsa",nm:"Withdraw from the BSA",cat:"Fiscal maneuvers",slots:1,pc:5,
   when:g=>g.flags.bsaDrawY===turnDate(g.turn).y?"Already drew this year — Prop 2's cap is annual, and the Controller counts":true,
   gate:g=>g.flags.fiscalEmergencyY!==turnDate(g.turn).y?WALLS.find(w=>w.id==="w_bsa").txt:null,
@@ -3348,12 +3425,12 @@ const ACTIONS=[
       cov(g,"Politico",`${b.num} will not die in Appropriations — the governor made a call`,
         "You know exactly how the suspense file works because you ran it. One phone call to a chair who owes you their gavel, and your bill migrates from the held list to the released list before the hearing. SUSPENSE FILE CALL: once a session, the machine works for you.");}}},
  {id:"ballot",nm:"Qualify a Ballot Measure",cat:"Political",slots:2,pc:10,
-  when:g=>g.measures.pending.length>=2?"Two measures already pending":true,
+  when:g=>g.measures.pending.length>=3?"Three operations already running — the vendors are at capacity":true,
   choices:g=>{const selfFund=g.player.bg==="tech";
     return MEASURES.filter(m=>!g.measures.pending.find(p=>p.id===m.id)&&!(g.measures.resolved||[]).find(p=>p.id===m.id)).map(m=>{
       const cost=m.type==="ICA"?12:8;
       return {id:m.id,nm:`${m.t} (${m.type})`,d:m.d+` Requires ${m.sigs.toLocaleString()} valid signatures.`,
-        cost:selfFund?"SELF-FUND: no permission needed — $"+cost+"M of your own money":"$"+cost+"M from the war chest + COA roll to hold the coalition"};});},
+        cost:`${measureFiscalTag(m)} · ${selfFund?"SELF-FUND — $"+cost+"M of your own money":"$"+cost+"M from the war chest + COA roll"}`};});},
   run:(g,c)=>{const m=MEASURES.find(x=>x.id===c);const selfFund=g.player.bg==="tech";
     const cost=m.type==="ICA"?12:8;
     if(g.player.chest<cost){cov(g,"Politico","Signature drive stalls at the bank","Qualification runs ~$9 a signature and the war chest can't cover the invoice. FUNDRAISE first, or make peace with the Legislature you were trying to route around.");return;}
@@ -3501,7 +3578,7 @@ LAG_FNS._waiverResp=(g,fx)=>{
 LAG_FNS._judconfirm=(g,fx)=>{
   g.flags.judPending=0;
   const risk={prosecutor:0.06,scholar:0.14,crossover:0.02}[fx.prof]||0.08;
-  const p=0.92-risk-(g.approval<38?0.06:0); // a weak governor invites a rival's statement vote
+  const p=0.92-risk-(g.approval<38?0.06:0)-(g.flags.agGrudge?0.04:0); // WALL-1: the AG remembers being asked if they could be "directed"
   if(RNG.r()<p){
     g.flags.judges=(g.flags.judges||0)+1;dAp(g,0.5);
     if(fx.prof==="prosecutor"){dAct(g,"gop",3);dAct(g,"mods",3);dAct(g,"ccpoa",3);dAct(g,"progs",-2);}
@@ -4077,7 +4154,8 @@ function buildMemo(g){
   if(g.pc>60&&g.slots===3)out.push(`You're sitting on ${g.pc} PC and a full slate of actions. Capital unspent is capital decaying — the honeymoon math never improves.`);
   if(g.pc<12&&(g.flags.barnstormCd||0)<=g.turn)out.push(`Political capital is down to ${g.pc} — you can't afford your own agenda. BARNSTORM THE STATE converts a road month into chits (town halls, the donor circuit, or the counties), and an under-scheduled month quietly regenerates more than a frantic one.`);
   if(g.fiscal.deficit>32){const revTools=[["revenforce","FTB ENFORCEMENT SPRINT"],["revfedsweep","FEDERAL REIMBURSEMENT SWEEP"],["revamnesty","TAX AMNESTY"],["revsurplus","SURPLUS PROPERTY SALE"]].filter(([id])=>{const a=ACTIONS.find(x=>x.id===id);return a&&a.when(g)===true;}).map(([,n])=>n);
-    if(revTools.length)out.push(`The gap is ${fmtB(g.fiscal.deficit)} and no 2/3 tax vote exists. Revenue you can raise WITHOUT the Legislature: ${revTools.join(", ")}. Enforcement and reimbursements are ongoing money; amnesties and asset sales are one-time — they boomerang in twelve months, priced honestly.`);}
+    if(revTools.length)out.push(`The gap is ${fmtB(g.fiscal.deficit)} and no 2/3 tax vote exists. Revenue you can raise WITHOUT the Legislature: ${revTools.join(", ")}. Enforcement and reimbursements are ongoing money; amnesties and asset sales are one-time — they boomerang in twelve months, priced honestly.`);
+    if(g.measures.pending.length<3)out.push(`Or go AROUND the building entirely: QUALIFY A BALLOT MEASURE. Split roll ($4B/yr), the services swap ($6B/yr), oil severance ($1.5B/yr) — none of them need 54 votes. They need 50%+1 of the voters, ~$9 a signature, and the nerve.`);}
   if(!out.length)out.push("A quiet month on paper. There is no such thing — check In Motion for what's already coming, and spend the quiet building standing you'll need in the loud months.");
   return out;
 }
@@ -4313,7 +4391,7 @@ function choicesModal(g,action){
 }
 function wallsModal(g){
   return `<div class="modal-back" data-act="closemodal"><div class="modal">
-  <h2>Test the Limits</h2><p class="subtle" style="margin-bottom:8px">The office looks omnipotent from outside. Try something. The wall costs nothing but illusions — DOC §6.3, compiled to hard gates.</p>
+  <h2>Test the Limits</h2><p class="subtle" style="margin-bottom:8px">The office looks omnipotent from outside. Try something — the wall itself won't move, but the ASK is real: it can leak (with victims), it can burn standing, and once or twice it teaches you something worth having. First test of each limit rolls the dice; re-reading is free. DOC §6.3, compiled to hard gates.</p>
   ${WALLS.map(w=>`<button class="choice wallbtn" data-act="dowall" data-id="${w.id}">
     <span class="cn">${w.nm}</span><span class="cd" style="color:var(--muted)">${w.cat}${g.flags.wallsSeen.includes(w.id)?" · seen":""}</span></button>`).join("")}
   <button data-act="closemodal">Close</button></div></div>`;
@@ -4559,11 +4637,30 @@ document.addEventListener("click",e=>{
     case "openwalls":UI.modal=wallsModal(G);render();break;
     case "closemodal":if(e.target===el||el.tagName==="BUTTON"){UI.modal=null;render();}break;
     case "dowall":{const w=WALLS.find(x=>x.id===el.dataset.id);
-      if(!G.flags.wallsSeen.includes(w.id))G.flags.wallsSeen.push(w.id);
+      const first=!G.flags.wallsSeen.includes(w.id);
+      if(first)G.flags.wallsSeen.push(w.id);
       cov(G,"WALL",w.nm,w.txt);
+      // WALL-1: the first ask has consequences — upsides land, and the question can leak
+      let outcome="";
+      if(first){
+        const wf=WALL_FX[w.id];
+        if(wf){
+          const up=wf.upside?wf.upside(G):null;
+          if(up)outcome+=`<p style="margin:8px 0;font-size:12.5px;color:var(--aqua)">✦ ${up}</p>`;
+          if(RNG.chance(wf.leakP)){
+            wf.fx(G);
+            cov(G,"Politico",wf.hl,wf.bd);
+            outcome+=`<p style="margin:8px 0;font-size:12.5px;color:var(--critical)">⚠ IT LEAKED. "${wf.hl}" is in Politico by morning — the consequences just posted to your standings. Three people were in the room; the building has no rooms.</p>`;
+          }else{
+            outcome+=`<p class="subtle" style="margin:8px 0">The question stayed in the room — this time. Asks like this leak roughly ${Math.round(wf.leakP*100)}% of the time.</p>`;
+          }
+          G.rngCalls=RNG.calls;
+        }
+      }else outcome=`<p class="subtle" style="margin:8px 0">You've asked before. Counsel re-sends the same memo, faster and slightly annoyed. No new risk in re-reading it.</p>`;
       UI.modal=`<div class="modal-back" data-act="closemodal"><div class="modal" style="border-color:var(--critical)">
         <h2 style="color:var(--critical)">🧱 ${esc(w.nm)}</h2>
         <p class="wall-quote" style="margin-top:10px">${w.txt}</p>
+        ${outcome}
         <p class="subtle" style="margin:8px 0">${esc(w.cat)} · DOC §6.3 hard gate. Filed to the Newsroom for the record.</p>
         <button class="primary" data-act="closemodal">Understood</button></div></div>`;
       render();break;}
