@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GOLDEN STATE — Governor of California Simulator</title>
+<meta name="description" content="GOLDEN STATE — a deterministic Governor of California simulator. Four years, a $35B structural deficit, 22 interest groups, a plural executive, and one desk everything lands on.">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230d0d0d'/><text x='50' y='72' font-size='64' text-anchor='middle' fill='%23c98500'>★</text></svg>">
 <style>
   :root{
     color-scheme: dark;
@@ -409,6 +412,45 @@
     .bignum{color:#a00 !important; text-shadow:none !important;}
     .subtle,.steps,.footer-note{color:#555 !important;}
     .noprint,.actionbar,.topbar,button,.drawer,.toast,.ticker{display:none !important;}
+  }
+
+  /* ===================== AES-1: the polish pass ===================== */
+  /* Discipline: micro-interactions only — hover states, entrances, focus rings. The austere
+     terminal-brutalist look IS the aesthetic; this pass sharpens it instead of decorating it. */
+  .panel{transition:border-color .18s ease, box-shadow .18s ease;}
+  .panel:hover{border-color:#3d3d38;}
+  .tile{transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
+  .tile:hover{transform:translateY(-1px); border-color:rgba(255,255,255,.16); box-shadow:0 6px 18px rgba(0,0,0,.35);}
+  .feed-item .fhead{transition:background .12s ease; border-radius:4px;}
+  .feed-item .fhead:hover{background:rgba(255,255,255,.03);}
+  .tabpill{transition:background .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;}
+  .tabpill.on{box-shadow:0 0 12px rgba(201,133,0,.20), inset 0 -2px 0 var(--yellow);}
+  .card{transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;}
+  .card:hover{transform:translateY(-2px); border-color:rgba(201,133,0,.45); box-shadow:0 8px 22px rgba(0,0,0,.4);}
+  .choice{transition:transform .12s ease, border-color .12s ease, background .12s ease;}
+  .choice:hover:not(:disabled){transform:translateX(3px);}
+  .tcand:hover:not(:disabled){transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.3);}
+  button:focus-visible, .card:focus-visible, [data-act]:focus-visible{outline:2px solid var(--blue); outline-offset:2px; border-radius:6px;}
+  .modal-back{animation:aesfade .16s ease-out;}
+  .modal{animation:aesmodal .18s cubic-bezier(.2,.9,.3,1.15);}
+  @keyframes aesfade{from{opacity:0}to{opacity:1}}
+  @keyframes aesmodal{from{opacity:0; transform:translateY(10px) scale(.985)}to{opacity:1; transform:none}}
+  .topbar{box-shadow:0 1px 0 var(--grid), 0 8px 24px rgba(0,0,0,.30);}
+  .topbar .brand{text-shadow:0 0 14px rgba(201,133,0,.35);}
+  .pill{transition:border-color .15s ease, color .15s ease;}
+  .lt-st{transition:background .2s ease, color .2s ease;}
+  .hsr-step.done{color:#7ecdb4;}
+  .toast{animation:aestoast .25s ease-out;}
+  @keyframes aestoast{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:none}}
+  .ticker{animation:aesfade .3s ease-out;}
+  .tip{animation:aesfade .3s ease-out;}
+  .setpiece{transition:box-shadow .3s ease;}
+  .inbox-item, .memo-line, .lt-meta{border-radius:3px;}
+  .kv:hover .k{color:var(--ink);}
+  .actor-row:hover .nm{color:var(--ink);}
+  .fchip{transition:background .15s ease, color .15s ease, border-color .15s ease;}
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation:none !important; transition:none !important;}
   }
 </style>
 </head>
@@ -1290,7 +1332,7 @@ function newGame(cfg){
       debt:BASELINE.debt_service.v, gimmicks:3.9, newTaxes:0, taxSigned:false,
       budget:{proposed:false,mix:null,solved:0,grade:null,enacted:false,late:0}},
     market:{idx:100, peak:100, mode:"exuberant", hazard:TUNING.HAZARD0, corrLeft:0, corrRate:0, troughLeft:0, hist:[100], eras:[], revApplied:0},
-    issues:{homeless:BASELINE.homeless_count.v, mediCal:BASELINE.medi_cal.v, prison:BASELINE.prison_pct.v,
+    issues:{homeless:BASELINE.homeless_count.v, unshelt:BASELINE.homeless_unshelt.v, mediCal:BASELINE.medi_cal.v, prison:BASELINE.prison_pct.v,
       insur:38, unemp:BASELINE.unemployment.v, grid:BASELINE.grid_margin.v, fireYtd:0,
       housingRate:9.2, housingCum:0, hsr:"seeking private capital", hsrStage:0, k12:BASELINE.k12_enroll.v,
       homelessBoost:0, housingBoost:0, insurBoost:0, medicalBoost:0, prisonRelief:0,
@@ -1581,10 +1623,13 @@ function stepMarket(g){
     const ago=M.hist[M.hist.length-13];
     const pct=(M.idx/ago-1)*100;
     const devTarget=clamp((pct-TUNING.REV_EXPECTED_12M)*TUNING.ELASTICITY_PER_PCT,TUNING.REV_DEV_MIN,TUNING.REV_DEV_MAX);
-    const surprise=Math.round((devTarget-(M.revApplied||0))*10)/10;
+    // REAL-ECON-1: capital gains arrive with April filings — the April window translates bigger and faster.
+    // "Mostly in April, sometimes not at all" — the LAO's deputy, above. This is the mechanism.
+    const april=g.turn%12===3;
+    const surprise=Math.round((devTarget-(M.revApplied||0))*(april?1.35:1)*10)/10;
     if(Math.abs(surprise)>2){
       M.revApplied=(M.revApplied||0)+surprise;
-      const lagT=RNG.int(3,9);
+      const lagT=april?RNG.int(1,3):RNG.int(3,9);
       const isBad=surprise<0;
       queue(g,lagT,{k:"rev",d:surprise,mn:isBad&&!g.flags.marketNoteShown?"MODEL NOTE: revenue translation uses the placeholder elasticity — see MODEL NOTES drawer.":null,
         cov:{src:"LAO",hl:isBad?"Revenue update: collections fall below forecast":"Revenue update: collections beat forecast — most of it already spoken for",
@@ -1771,6 +1816,9 @@ function driftIssues(g,d){
     -(I.homelessBoost*0.085)-((I.lawHomeless||0)*0.05)-((I.housingBoost+(I.lawHousing||0))*0.006);
   if(g.actors.mayors>30)hPct-=0.06;
   I.homeless=Math.round(I.homeless*(1+hPct/100+RNG.norm(0,0.001)));
+  // REAL-HML-1: programs SHELTER people before they house them — the unsheltered share moves first
+  // and fastest (it's also what the public sees, so approval keys off it harder than off the count).
+  I.unshelt=clamp((I.unshelt||66)+0.08-(I.homelessBoost*0.10)-((I.lawHomeless||0)*0.04),38,80);
   I.homelessBoost=Math.max(0,I.homelessBoost-0.06); // MECH-4: programs fade unless renewed — statutes don't
   I.housingBoost*=0.99; // ACT-3: EO/program housing pushes fade slowly too; only law and production are forever
   // housing production (thousands/mo) — statutes + programs + the BCSH secretary's résumé
@@ -1804,6 +1852,7 @@ function driftApproval(g){
   fund+=(M.mode==="exuberant"?2:M.mode==="recovery"?0:-4);
   fund-=(I.unemp-5.3)*1.6;
   fund+=(181934-I.homeless)/181934*30;
+  fund-=((I.unshelt||66)-66)*0.05; // REAL-HML-1: the tents are what voters see, not the PIT spreadsheet
   fund+=(I.insur-38)/12;
   fund+=g.player.attrs.CHA*0.5;
   if(g.flags.jobKiller)fund-=2;
@@ -1862,6 +1911,13 @@ function scheduledEvents(g,d){
         if(g.flags.hr1Applied>=TUNING.HR1_JAN_CAP)
           cov(g,"LAO","H.R.1 reaches its full weight",
             "The federal cost shift has now plateaued at roughly $5 billion a year all-in — the SNAP share, the Medi-Cal share, the administrative load. It stops growing here. It also never goes away. The LAO files it under 'baseline' now, which is the bureaucratic word for grief that has been accepted.");
+      }
+      // REAL-LEG-1: two-year bills wake up in January and restart in committee
+      for(const b of g.bills.pipeline.filter(x=>x.stage==="twoYear")){
+        b.stage="committee";
+        queue(g,2,{k:"fn",fn:"_advanceCommittee"});
+        cov(g,"Politico",`${b.num} is back — the two-year bill returns to committee`,
+          `${b.t} re-emerged from the biennium's drawer with new amendments and the same author. The committee remembers why it stalled; the author remembers who stalled it. Round two.`);
       }
       // LEG-1: the new session introduces its own bills — the slate is different every year
       const freshBills=BILL_POOL.filter(b=>(b.yr||2027)===y&&!g.bills.enactedIds.includes(b.id));
@@ -2171,7 +2227,20 @@ function billEffSummary(fx){ // ACT-2: what a signature actually puts on the boo
   for(const[k,v]of Object.entries(fx.issue||{}))if(nm[k])parts.push(`${nm[k]} ${v>0?"+":""}${v} on the books`);
   return parts.join(" · ");
 }
-function billDied(g,b,how){b.stage="dead";(g.bills.deadSess=g.bills.deadSess||{})[b.id]=turnDate(g.turn).y;billOutcome(g,b,how);}
+function billDied(g,b,how){
+  // REAL-LEG-1: the Legislature runs two-year sessions. A bill that stalls in committee or on the
+  // suspense file in an ODD year isn't necessarily dead — it can become a "two-year bill" and
+  // return in January. Floor deaths and failed urgency runs stay dead: those were counted in public.
+  const y=turnDate(g.turn).y;
+  if(y%2===1&&b.sponsored&&!b.urgent&&(how==="held in Appropriations"||how==="died in policy committee")&&RNG.chance(0.45)){
+    b.stage="twoYear";
+    billOutcome(g,b,"made a two-year bill");
+    cov(g,"CalMatters",`${b.num} survives as a two-year bill`,
+      `${b.t} ${how==="held in Appropriations"?"stayed on the chair's held list":"stalled in committee"} — but this is year one of the biennium, and the author moved to make it a two-year bill. It sleeps until January, keeps its co-authors, and restarts in committee with the amendments everyone now knows it needs. Half of Sacramento's eventual laws died once first.`);
+    return;
+  }
+  b.stage="dead";(g.bills.deadSess=g.bills.deadSess||{})[b.id]=y;billOutcome(g,b,how);
+}
 function sessionEnd(g,y){
   // player floor bills resolve — L2: counted, not rolled; LEG-3: whipped seats count here
   for(const b of g.bills.pipeline.filter(b=>b.stage==="floor")){
@@ -2179,6 +2248,16 @@ function sessionEnd(g,y){
     const v=voteModel(g,true,{bonusSeats:chit+(b.whip||0),tax:!!b.needs23}); // 2/3 revenue bills get no GOP votes
     const needA=b.needs23?54:41, needS=b.needs23?27:21;
     if(v.asm>=needA&&v.sen>=needS){b.stage="passed";b.floorVotes=v;g.bills.desk.push(b);}
+    // REAL-LEG-2: bills rarely die clean on the floor — a near miss gets amended to passage instead.
+    // Leadership finds the last votes by watering it down: the gf and policy effects shrink to 60%.
+    else if(!b.needs23&&needA-v.asm<=3&&needS-v.sen<=3){
+      b.stage="passed";b.amended=true;b.floorVotes={asm:needA,sen:needS};
+      const scale=x=>Math.round(x*0.6*100)/100;
+      b.sign={...b.sign,gf:b.sign.gf?scale(b.sign.gf):b.sign.gf,
+        issue:b.sign.issue?Object.fromEntries(Object.entries(b.sign.issue).map(([k,v2])=>[k,scale(v2)])):b.sign.issue};
+      g.bills.desk.push(b);
+      cov(g,"CalMatters",`${b.num} passes — after the amendments that made it possible`,
+        `${b.t} was ${Math.max(needA-v.asm,needS-v.sen)} votes short at dinnertime and passed at midnight, which tells you everything: the holdouts named their price and the price was the bill's strength. The version on its way to the desk does roughly 60 percent of what the version introduced in the spring would have done. In this building that is called success, and by the standards of the alternative, it is.`);}
     else{billDied(g,b,"died on the floor");
       cov(g,"Politico",`${b.num} dies in the August rush — ${v.asm} of ${needA} in the Assembly`,
         `${b.t} came up ${Math.max(needA-v.asm,needS-v.sen)} votes short when the roll closed at midnight on the 31st: ${v.asm}–${79-v.asm} in the Assembly against the ${needA} it needed, ${v.sen}–${40-v.sen} in the Senate against ${needS}.${b.whip?" The "+b.whip+" votes you whipped showed up; they were not enough.":" Nobody whipped it, and it shows in the count."} Not a rumor of a margin — a number, printed in the Daily Journal, attached to your name. Eight hundred bills moved in seventy-two hours; yours was counted out. There is always next session, says everyone, to everyone, annually.`);}
@@ -2202,23 +2281,26 @@ function sessionEnd(g,y){
 }
 function enactBill(g,b,decision,silent){
   const fx=decision==="sign"?b.sign:b.veto;
-  billOutcome(g,b,decision==="sign"?(silent?"became law unsigned":"signed"):"vetoed",decision==="sign"?billEffSummary(fx):"");
+  // REAL-LEG-3: chaptered statutes take effect JANUARY 1 (Cal. Const. art. IV §8(c)); urgency = immediate
+  const efLag=b.urgent?2:(12-turnDate(g.turn).m)+1;
+  billOutcome(g,b,decision==="sign"?(silent?"became law unsigned":"signed"):"vetoed",
+    decision==="sign"?billEffSummary(fx)+(!b.urgent&&(fx.gf||fx.issue)?" · effective Jan 1":""):"");
   for(const[id,d]of Object.entries(fx.act||{}))dAct(g,id,d);
   if(fx.ap)dAp(g,fx.ap);
   if(decision==="sign"){
     g.bills.signed.push(b.id);g.bills.enactedIds.push(b.id);
-    if(fx.gf)queue(g,4,{k:"deficit",d:-fx.gf});
+    if(fx.gf)queue(g,efLag,{k:"deficit",d:-fx.gf},"statute takes fiscal effect ("+b.num+")","you");
     if(fx.tax)g.fiscal.taxSigned=true;
     if(b.id==="b_saas_repeal")g.flags.saasRepealed=true;
     if(b.id==="b_insur")g.issues.insur=clamp(g.issues.insur+(b.urgent?8:4),0,100); // the announcement effect: carriers price the signal
     // ACT-2: statutes land in the LAW columns — permanent until repealed, unlike programs and EOs
     const iss=fx.issue||{};
-    if(iss.housingBoost)queue(g,b.urgent?2:5,{k:"law",key:"lawHousing",d:iss.housingBoost},"statute takes effect: housing ("+b.num+")","you");
-    if(iss.homelessBoost)queue(g,b.urgent?2:6,{k:"law",key:"lawHomeless",d:iss.homelessBoost},"statute takes effect: homelessness ("+b.num+")","you");
-    if(iss.insurBoost)queue(g,b.urgent?2:6,{k:"law",key:"lawInsur",d:iss.insurBoost},"statute takes effect: insurance ("+b.num+")","you");
-    if(iss.medicalBoost)queue(g,b.urgent?2:4,{k:"law",key:"lawMedical",d:iss.medicalBoost},"statute takes effect: Medi-Cal ("+b.num+")","you");
-    if(iss.prisonRelief)queue(g,b.urgent?2:6,{k:"law",key:"lawPrison",d:iss.prisonRelief},"statute takes effect: corrections ("+b.num+")","you");
-    if(iss.grid)queue(g,b.urgent?2:8,{k:"grid",d:iss.grid},"grid procurement ("+b.num+")","you");
+    if(iss.housingBoost)queue(g,efLag,{k:"law",key:"lawHousing",d:iss.housingBoost},"statute takes effect: housing ("+b.num+")","you");
+    if(iss.homelessBoost)queue(g,efLag,{k:"law",key:"lawHomeless",d:iss.homelessBoost},"statute takes effect: homelessness ("+b.num+")","you");
+    if(iss.insurBoost)queue(g,efLag,{k:"law",key:"lawInsur",d:iss.insurBoost},"statute takes effect: insurance ("+b.num+")","you");
+    if(iss.medicalBoost)queue(g,efLag,{k:"law",key:"lawMedical",d:iss.medicalBoost},"statute takes effect: Medi-Cal ("+b.num+")","you");
+    if(iss.prisonRelief)queue(g,efLag,{k:"law",key:"lawPrison",d:iss.prisonRelief},"statute takes effect: corrections ("+b.num+")","you");
+    if(iss.grid)queue(g,b.urgent?2:efLag+4,{k:"grid",d:iss.grid},"grid procurement ("+b.num+")","you");
     if(fx.fedHeat)g.actors.fedadmin=clampA(g.actors.fedadmin-6);
     if(iss.pensionCut)g.fiscal.pension=Math.max(180,g.fiscal.pension-iss.pensionCut); // MECH-6: single write, no dead queue
   }else{
@@ -2598,6 +2680,7 @@ function buildLegacy(g){
     deficit:fi.deficit,deficitDelta,
     issues:[
       ["Homelessness",`181,934 → ${I.homeless.toLocaleString()}`,(181934-I.homeless)/181934*100],
+      ["Unsheltered share",`66% → ${(I.unshelt||66).toFixed(0)}%`,66-(I.unshelt||66)],
       ["Housing units (cum.)",`${Math.round(I.housingCum)}k over the term`,I.housingCum-441],
       ["Medi-Cal enrollment",`14.8M → ${I.mediCal.toFixed(1)}M (H.R.1 baseline path: ~12.5M)`,I.mediCal-12.5],
       ["Insurance stability",`38 → ${Math.round(I.insur)} / 100`,I.insur-38],
@@ -3568,6 +3651,7 @@ function issuesPanel(g){
   const row=(nm,val,arr,color,mkey)=>`<div class="issue-row"><span class="inm">${nm}</span>${spark(arr,74,18,color||"var(--blue)",{markers:mkey?g.markers[mkey]:null})}<span class="ival">${val}</span></div>`;
   return `<div class="panel"><h3>Issues <span class="subtle">▴ = your action landing</span></h3>
     ${row("Homelessness "+`<span class="tag VERIFIED" title="${esc(BASELINE.homeless_count.src)}">VERI</span>`,I.homeless.toLocaleString(),g.hist.homeless,"var(--blue)","homeless")}
+    <div class="kv"><span class="k" style="font-size:11px" title="${esc(BASELINE.homeless_unshelt.src)} Programs shelter people before they house them — this share moves first, and it is what voters see.">↳ unsheltered share</span><span class="v ${(I.unshelt||66)>70?"bad":(I.unshelt||66)<58?"good":""}">${(I.unshelt||66).toFixed(0)}%</span></div>
     ${row("Housing units (cum, k)",Math.round(I.housingCum)+"k",g.hist.housing,"var(--aqua)","housing")}
     ${row("Medi-Cal (M)",I.mediCal.toFixed(1)+"M",g.hist.medical,"var(--violet)","medical")}
     ${row("Insurance stability",Math.round(I.insur)+"/100",g.hist.insur,I.insur<35?"var(--red)":"var(--aqua)","insur")}
@@ -3642,6 +3726,8 @@ function legTrackerPanel(g){
   if(!pipe.length&&!desk.length&&!log.length)return "";
   const d=turnDate(g.turn);
   const stageRow=b=>{
+    if(b.stage==="twoYear")return `<div class="lt-row"><div class="lt-hd"><b>${b.num}</b> ${b.t} <span class="pill" style="color:var(--violet);border-color:var(--violet);font-size:8px">TWO-YEAR BILL</span></div>
+      <div class="lt-meta subtle">Sleeping in the biennium's drawer — returns to committee in January with its co-authors intact.</div></div>`;
     const stages=b.urgent?["Introduced","Committee","Floor · ⅔ monthly","Desk"]:["Introduced","Committee","Suspense","Floor","Desk"];
     const idx=b.urgent?(b.stage==="committee"?1:b.stage==="floor"?2:3):(b.stage==="committee"?1:b.stage==="suspense"?2:b.stage==="floor"?3:4);
     const chips=stages.map((s,i)=>`<span class="lt-st ${i<idx?"done":i===idx?"now":""}">${s}</span>`).join(`<span class="lt-arrow">›</span>`);
@@ -3817,7 +3903,7 @@ function setpiece(g,d){
   if(!g.bills.desk.length)return "";
   return `<div class="setpiece"><h3>⚖ THE SEPTEMBER DESK — sign or veto by Sept 30</h3>
   <p class="subtle">The single biggest decision volume of the year. Unsigned bills become law WITHOUT your signature at month's end. Signing and vetoing costs no action slots — only consequences.</p>
-  ${g.bills.desk.map((b,i)=>`<div class="bill"><div class="bt">${b.num} — ${b.t} ${b.sponsored?'<span class="pill" style="color:var(--aqua)">YOUR BILL</span>':""}${b.needs23?'<span class="pill" style="color:var(--warn)">passed with 2/3</span>':""}${b.floorVotes?` <span class="subtle num" style="font-size:10px">(${b.floorVotes.asm}–${79-b.floorVotes.asm})</span>`:""}</div>
+  ${g.bills.desk.map((b,i)=>`<div class="bill"><div class="bt">${b.num} — ${b.t} ${b.sponsored?'<span class="pill" style="color:var(--aqua)">YOUR BILL</span>':""}${b.amended?'<span class="pill" style="color:var(--violet);border-color:var(--violet)" title="Watered down to pass — effects at ~60% of the introduced version">AS AMENDED</span>':""}${b.needs23?'<span class="pill" style="color:var(--warn)">passed with 2/3</span>':""}${b.floorVotes?` <span class="subtle num" style="font-size:10px">(${b.floorVotes.asm}–${79-b.floorVotes.asm})</span>`:""}</div>
     <div class="bwho">FOR: ${b.backers.map(x=>ACTORS.find(a=>a.id===x).nm).join(", ")} · AGAINST: ${b.opps.map(x=>ACTORS.find(a=>a.id===x).nm).join(", ")}</div>
     <div style="font-size:12px;margin:3px 0">${b.d}${b.sign.gf?` <span class="num" style="color:${b.sign.gf>0?"var(--good)":"var(--red)"}">(GF ${b.sign.gf>0?"+":""}${b.sign.gf}B/yr)</span>`:""}</div>
     <button class="primary" data-act="bill" data-i="${i}" data-dec="sign">Sign</button>
