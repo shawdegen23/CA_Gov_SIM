@@ -3462,6 +3462,36 @@ const ACTIONS=[
     cov(g,"AP",`Signature drive launches: "${m.t}"`,
       (selfFund?"SELF-FUND: you wrote the check personally — no donors consulted, no interest group holding the pen. ":"")+
       `${m.sigs.toLocaleString()} valid signatures needed at roughly $9 a name, with the 180-day clock already running. ${strong?"The vendor contracts are signed and the clipboards are outside every Costco in the state — a strong operation, on pace.":"The coalition bickered over ballot language for three weeks first — the operation launches understaffed and behind pace."}${army?" FIELD ARMY: your locals gather alongside the paid crews — the rate shows it.":""} Progress runs on the Bill Tracker; the opposition's trackers photograph every clipboard.`);}},
+ /* BALLOT-2: qualifying is the introduction; the campaign is the follow-through — same shape as
+    Push Legislation. Drives can be surged with money; qualified measures can be barnstormed. */
+ {id:"pushmeasure",nm:"Campaign for Your Measure",cat:"Political",slots:1,pc:3,
+  when:g=>g.measures.pending.length?true:"Nothing of yours is in the field — QUALIFY A BALLOT MEASURE first",
+  choices:g=>{
+    const out=[];
+    for(const m of g.measures.pending){
+      if(m.gathering)out.push({id:m.id+"|surge",nm:`${m.t} — surge the signature drive`,
+        d:`Double the vendor crews for a month: +180,000 signatures immediately and a faster rate after. Currently ${m.sigsGot.toLocaleString()} of ${m.sigs.toLocaleString()} with the 180-day clock running.`,
+        cost:g.player.chest>=3?"$3M from the war chest":"NEEDS $3M in the war chest — FUNDRAISE first"});
+      else if(m.electionTurn)out.push({id:m.id+"|campaign",nm:`${m.t} — barnstorm for the YES`,
+        d:`Your face in the ads, your voice on the stump${m.playerSpend>2?" (already campaigning — spend stacks)":""}. A CHA roll: success moves the projected YES about +0.8, and attaching yourself makes the measure a referendum on you — win or lose together.`,
+        cost:"CHA roll · +YES either way, more on a hit"});
+    }
+    return out;},
+  run:(g,c)=>{const cut=c.lastIndexOf("|"),mid=c.slice(0,cut),verb=c.slice(cut+1);
+    const m=g.measures.pending.find(x=>x.id===mid);if(!m)return;
+    if(verb==="surge"){
+      if(g.player.chest<3){cov(g,"Politico","The surge order bounced at the bank","The vendors want payment on signing and the war chest is short. FUNDRAISE, then flood the Costco parking lots.");return;}
+      g.player.chest-=3;m.sigsGot+=180000;m.rate+=20;
+      cov(g,"CalMatters",`The "${m.t}" drive doubles its crews`,
+        `$3M bought a surge month: every farmers market, every DMV line, every college quad. ${(180000).toLocaleString()} signatures banked immediately and the weekly rate steps up. The 180-day clock is unmoved, but you just bought back a month of it.`);}
+    else if(verb==="campaign"){
+      const r=roll(g,"CHA",0.08,0);
+      m.playerSpend=(m.playerSpend||0)+(r.ok?2:1);
+      if(r.ok){dAp(g,0.3);
+        cov(g,"AP",`The governor goes all-in on "${m.t}"`,
+          "Three markets in two days, your face in the closing ad, and the measure now reads as YOUR measure — which moves its number and raises its stakes in the same motion. The consultants call this 'coattails.' The opposition calls it 'a target.' Both are right.");}
+      else cov(g,"Politico",`The measure tour lands soft`,
+          `The rallies happened; the clips led with the protesters outside. The YES number inches up on organization alone, but the big move didn't come. There is another month, until there isn't.`);}}},
  {id:"oppose",nm:"Oppose a Hostile Measure",cat:"Political",slots:1,pc:4,
   when:g=>g.measures.hostile.length?true:"No hostile measure pending",
   run:(g,c)=>{const m=g.measures.hostile.shift();g.player.chest=Math.max(0,g.player.chest-5);dAp(g,0.5);
@@ -4121,7 +4151,8 @@ function inMotionPanel(g){
 function legTrackerPanel(g){
   const pipe=g.bills.pipeline,desk=g.bills.desk,log=(g.bills.outcomeLog||[]).slice(0,6);
   const drives=(g.measures.pending||[]).some(m=>m.gathering);
-  if(!pipe.length&&!desk.length&&!log.length&&!drives)return "";
+  const onBallot=(g.measures.pending||[]).some(m=>!m.gathering&&m.electionTurn)||(g.measures.hostile||[]).some(h=>h.electionTurn);
+  if(!pipe.length&&!desk.length&&!log.length&&!drives&&!onBallot)return "";
   const d=turnDate(g.turn);
   const stageRow=b=>{
     if(b.stage==="twoYear")return `<div class="lt-row"><div class="lt-hd"><b>${b.num}</b> ${b.t} <span class="pill" style="color:var(--violet);border-color:var(--violet);font-size:8px">TWO-YEAR BILL</span></div>
@@ -4143,10 +4174,16 @@ function legTrackerPanel(g){
   return `<div class="panel"><h3>Bill Tracker <span class="subtle">${pipe.length} in the building · ${desk.length} on the desk</span></h3>
   ${pipe.length?pipe.map(stageRow).join(""):`<div class="subtle">Nothing of yours is in the building. SPONSOR LEGISLATION opens the ${d.y} slate${d.m>6?" in January (introduction deadline passed)":""}.</div>`}
   ${desk.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">ON THE DESK — sign or veto by Sept 30</div>${desk.map(b=>`<div class="lt-meta">▸ ${b.num} ${b.t}${b.sponsored?' <span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">YOURS</span>':""}${b.fromLeg?' <span class="subtle" style="font-size:9px">(the Legislature’s)</span>':""}</div>`).join("")}`:""}
-  ${(g.measures.pending||[]).some(m=>m.gathering)?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">✍ SIGNATURE DRIVES <span style="float:right">~$9/name · 180-day clock</span></div>${g.measures.pending.filter(m=>m.gathering).map(m=>{const pct=Math.min(100,m.sigsGot/m.sigs*100);const monthsIn=g.turn-m.startTurn;
+  ${(g.measures.pending||[]).some(m=>m.gathering)?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">✍ SIGNATURE DRIVES <span style="float:right">~$9/name · 180-day clock · CAMPAIGN FOR YOUR MEASURE can surge a drive</span></div>${g.measures.pending.filter(m=>m.gathering).map(m=>{const pct=Math.min(100,m.sigsGot/m.sigs*100);const monthsIn=g.turn-m.startTurn;
     return `<div class="lt-row"><div class="lt-hd" style="font-size:11.5px">${esc(m.t)} <span class="subtle num">(${m.type} · needs ${m.sigs.toLocaleString()})</span></div>
     <div class="abar" style="height:9px;margin:3px 0"><div class="fill" style="left:0;width:${pct}%;background:${pct>70?"var(--good)":pct>35?"var(--yellow)":"var(--serious)"}"></div></div>
     <div class="lt-meta num">${m.sigsGot.toLocaleString()} gathered (${Math.round(pct)}%) · month ${monthsIn+1} of ~6 · ${monthsIn>=5&&pct<85?'<span style="color:var(--critical)">THE CLOCK IS WINNING</span>':"on the clock"}</div></div>`;}).join("")}`:""}
+  ${(g.measures.pending||[]).some(m=>!m.gathering&&m.electionTurn)?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">🗳 ON THE BALLOT <span style="float:right">CAMPAIGN FOR YOUR MEASURE moves the number</span></div>${g.measures.pending.filter(m=>!m.gathering&&m.electionTurn).map(m=>{
+    let yes=m.baseYes+(g.approval-48)*0.25+(m.playerSpend||0)*0.4;
+    for(const o of (m.oppose||[]))if(g.actors[o]<=-20)yes-=6;
+    return `<div class="lt-row"><div class="lt-hd" style="font-size:11.5px">${esc(m.t)} <span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">QUALIFIED</span></div>
+    <div class="lt-meta num">polls ~${Math.round(yes)}% yes · election ${turnDate(m.electionTurn).label} (${m.electionTurn-g.turn} mo) · ${measureFiscalTag(m)}${(m.oppose||[]).some(o=>g.actors[o]<=-20)?' · <span style="color:var(--serious)">funded opposition active (−6/group)</span>':""}</div></div>`;}).join("")}`:""}
+  ${(g.measures.hostile||[]).filter(h=>h.electionTurn).length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">⚠ HOSTILE MEASURES ON THE BALLOT <span style="float:right">OPPOSE A HOSTILE MEASURE kills one</span></div>${g.measures.hostile.filter(h=>h.electionTurn).map(h=>`<div class="lt-meta">▸ ${esc(h.t)} <span class="num subtle">· election ${turnDate(h.electionTurn).label} · ignored initiatives get VOTED ON</span></div>`).join("")}`:""}
   ${log.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">RECENT OUTCOMES</div>${log.map(o=>`<div class="lt-meta"><span class="due">[${turnDate(o.t).label}]</span> ${o.num} ${esc(o.title)} — <span style="color:${o.res==="signed"?"var(--good)":o.res==="vetoed"?"var(--red)":o.res==="became law unsigned"?"var(--ink2)":"var(--serious)"}">${o.res}</span>${o.eff?` <span class="subtle" style="font-size:9.5px">(${esc(o.eff)})</span>`:""}${o.sponsored?' <span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">YOURS</span>':""}</div>`).join("")}`:""}
   </div>`;
 }
