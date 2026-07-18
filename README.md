@@ -16,7 +16,7 @@ The entire game is one static file with no dependencies or build step:
 The game is deployed on Vercel as the `golden-state_3` project:
 https://golden-state3.vercel.app
 
-`index.html` in this repository is the source of truth. To update the live
-site, redeploy this file to the `golden-state_3` Vercel project (or connect
-this repository to the project in the Vercel dashboard under
-Project Settings → Git so pushes deploy automatically).
+`index.html` in this repository is the source of truth. The repository is
+connected to the Vercel project via the Git integration: pushes to `main`
+deploy to production, and pushes to other branches create preview
+deployments.

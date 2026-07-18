@@ -323,6 +323,62 @@
   .inbox-item.motion .due{color:var(--aqua);}
   .memo summary{list-style-position:outside;}
 
+  /* ---- v3.1: aesthetics round 2 ---- */
+  .tile{position:relative; overflow:hidden; transition:transform .12s, box-shadow .12s;}
+  .tile:hover{transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.05);}
+  .tile::before{content:""; position:absolute; top:0; left:0; right:0; height:2px; opacity:.85;}
+  .tile.acc-blue::before{background:linear-gradient(90deg,var(--blue),transparent);}
+  .tile.acc-red::before{background:linear-gradient(90deg,var(--red),transparent);}
+  .tile.acc-aqua::before{background:linear-gradient(90deg,var(--aqua),transparent);}
+  .tile.acc-violet::before{background:linear-gradient(90deg,var(--violet),transparent);}
+  .tchip{animation:chipin .35s ease-out, chipout .6s ease-in 3.4s forwards;}
+  @keyframes chipout{to{opacity:0; transform:translateY(6px);}}
+  .chipc-CalMatters{color:var(--yellow); border-color:rgba(201,133,0,.45);}
+  .chipc-Politico{color:var(--magenta); border-color:rgba(213,81,129,.45);}
+  .chipc-AP{color:var(--ink2); border-color:rgba(255,255,255,.22);}
+  .chipc-LAO{color:var(--blue); border-color:rgba(57,135,229,.45);}
+  .chipc-PPIC{color:var(--aqua); border-color:rgba(25,158,112,.45);}
+  .chipc-WALL{color:var(--critical); border-color:rgba(208,59,59,.5);}
+  .chipc-SYSTEM{color:var(--violet); border-color:rgba(144,133,233,.45);}
+  .inter-date{font-family:var(--serif); font-size:26px; font-weight:700; color:var(--ink); letter-spacing:.03em; text-align:center;}
+  .inter-rule{font-family:var(--mono); font-size:9.5px; letter-spacing:.18em; color:var(--muted); text-align:center;
+    border-bottom:3px double var(--baseline); padding-bottom:8px; margin-bottom:10px;}
+  .ov-col,.two-col,.news-col{animation:tabfade .16s ease-out backwards;}
+  @keyframes tabfade{from{opacity:.55; transform:translateY(4px);}to{opacity:1; transform:none;}}
+  .choice:hover:not(:disabled){border-color:rgba(201,133,0,.5); background:#26221a;}
+  button:focus-visible, .fhead:focus-visible{outline:2px solid var(--blue); outline-offset:2px;}
+  .actionbar .danger{background:linear-gradient(180deg,#6b2424,#4a1a1a); border-color:var(--critical);
+    font-weight:650; letter-spacing:.02em; padding:8px 16px;}
+  .actionbar .danger:hover:not(:disabled){box-shadow:0 0 18px rgba(208,59,59,.3); background:linear-gradient(180deg,#7a2929,#571e1e);}
+  .setpiece h3{font-size:12px; letter-spacing:.1em;}
+  .hline .fhl:hover{color:var(--yellow);}
+  .fhead{cursor:pointer;}
+  .fhead:hover .hl{color:var(--yellow);}
+
+  /* ---- transition set-piece ---- */
+  .trow{border-top:1px dotted var(--grid); padding:7px 0;}
+  .trow-h{font-size:12.5px; color:var(--ink); margin-bottom:5px;}
+  .trow-opts{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:6px;}
+  .tcand{text-align:left; font-size:11.5px; padding:7px 10px; position:relative;}
+  .tcand:hover:not(:disabled){border-color:rgba(201,133,0,.5);}
+  .tcand .risk{position:absolute; top:3px; right:6px; font-family:var(--mono); font-size:7.5px; color:var(--warn); letter-spacing:.08em;}
+  .pendrow{opacity:.8;}
+
+  /* ---- chart explorer & HSR tracker ---- */
+  .chartpanel{padding:14px 18px;}
+  .bigchart{display:block;}
+  .axlab{font-family:var(--mono); font-size:10px; fill:var(--muted);}
+  .endlab{fill:var(--ink); font-size:11px; font-weight:600;}
+  .hsr-steps{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .hsr-step{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--muted);
+    background:var(--surface2); border:1px solid var(--grid); border-radius:16px; padding:5px 12px 5px 6px;}
+  .hsr-step.done{color:var(--good); border-color:rgba(12,163,12,.4);}
+  .hsr-step.cur{color:var(--yellow); border-color:rgba(201,133,0,.5); box-shadow:0 0 12px rgba(201,133,0,.12);}
+  .hsr-dot{display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%;
+    background:var(--surface3); font-family:var(--mono); font-size:10px;}
+  .hsr-step.done .hsr-dot{background:#0e2a0e;} .hsr-step.cur .hsr-dot{background:#2b2410;}
+  .hsr-line{flex:0 0 14px; height:1px; background:var(--baseline);}
+
   /* ---- print (A10) ---- */
   @media print{
     :root{color-scheme:light;}
@@ -435,7 +491,20 @@ const BASELINE={
   hr1_snap:          {v:2.0,   tag:"VERIFIED",  src:"H.R.1 SNAP cost shift ~$2B/yr lands Oct 2027 (CA ~11% error rate → 15% state share). Total H.R.1: $1.3B (26-27) → $5B/yr (29-30). DOC §1.7."},
   prop98_deferral:   {v:3.9,   tag:"VERIFIED",  src:"~$3.9B Prop 98 deferral in the enacted 2026-27 budget; education groups threatened suit. DOC §2.6."},
 };
+/* REAL-1: the Nov 2026 election turned over much of the plural executive. Lara, Ma, Thurmond termed out;
+   Kounalakis gone; the AG/Controller/SoS races are unresolved in the DOC. Per build prompt §1.6, everyone
+   whose 2027 status is uncertain is a SYNTHETIC_OFFICEHOLDER with a real title. */
+const OFFICERS={
+  ag:      {nm:"Attorney General A. Castillo",   short:"Castillo", ini:"AC"},
+  ins:     {nm:"Insurance Commissioner D. Okonkwo",short:"Okonkwo", ini:"DO"},
+  controller:{nm:"Controller R. Fontes",         short:"Fontes",   ini:"RF"},
+  treasurer:{nm:"Treasurer G. Liang",            short:"Liang",    ini:"GL"},
+  spi:     {nm:"Superintendent P. Whitcomb",     short:"Whitcomb", ini:"PW"},
+  sos:     {nm:"Secretary of State N. Delacruz", short:"Delacruz", ini:"ND"},
+  ltgov:   {nm:"the Lieutenant Governor",        short:"the Lieutenant Governor", ini:"LG"},
+};
 const MODEL_NOTES=[
+  ["Synthetic officeholders (2027–)","Lara, Ma, and Thurmond were termed out at the end of 2026, Kounalakis left for the governor's race, and the DOC records the other down-ballot 2026 results as unresolved. Every constitutional officer in this game is therefore a SYNTHETIC_OFFICEHOLDER — a fictional person holding a real office with its real powers. Rivas and Limón (legislative, verified into the 2027 session) remain themselves."],
   ["Enacted 2026-27 General Fund","Exact GF dollar figure unconfirmed (DOC §6.8). Engine uses $247B — the midpoint of the $246–248B range."],
   ["Equity-drawdown → revenue elasticity","No published mapping exists. LAO says only that a significant decline 'would reduce state revenues by tens of billions.' Engine placeholder: each 10% sustained S&P drawdown ≈ −$11B/yr GF revenue, landing over 3–18 months, with Prop 98 absorbing ~40¢/$."],
   ["Discretionary share of the General Fund","Commonly cited 'well under 20%' but no clean figure located (DOC §6.8). Engine treats ~$38B as realistically reachable in a single budget without formula changes."],
@@ -764,6 +833,18 @@ const AGENCIES=[
  ["CalSTA","Transportation"],["CDCR","Corrections"],["LWDA","Labor & Workforce"],
  ["GovOps","Government Operations"],["BCSH","Business, Consumer Services & Housing"],["CalEPA","Environmental Protection"]];
 const APPOINTEE_NAMES=["M. Delgado","J. Okafor","S. Whitfield","R. Nakamura","A. Beaumont","L. Vasquez","T. Kaczmarek","D. Iyer","C. Roubideaux","P. Lindqvist","E. Marchetti","K. Osei"];
+/* MECH-8 fix: 27 distinct names — each agency gets its own [holdover, ally, reformer]; nobody holds two jobs. */
+const CAB_NAMES=[
+ ["M. Delgado","R. Castaneda","V. Okoye"],      // DOF
+ ["J. Okafor","H. Wintersteen","F. Alameda"],   // CalHHS
+ ["S. Whitfield","B. Tallchief","N. Grewal"],   // CNRA
+ ["R. Nakamura","G. Petrakis","W. LaFontaine"], // CalSTA
+ ["A. Beaumont","O. Sandoval","Y. Kimura"],     // CDCR
+ ["L. Vasquez","D. Aguirre","M. Osterberg"],    // LWDA
+ ["T. Kaczmarek","C. Byrd","I. Farrokhzad"],    // GovOps
+ ["D. Iyer","P. Marchetti","S. Njoku"],         // BCSH
+ ["C. Roubideaux","K. Ellingson","J. Talamantes"]]; // CalEPA
+function candName(agencyIdx,type){const t=type==="holdover"?0:type==="ally"?1:2;return (CAB_NAMES[agencyIdx]||CAB_NAMES[0])[t];}
 
 /* ===================== 9c. EXISTENTIAL CAMPAIGNS (R5) ===================== */
 const CAMPAIGNS={
@@ -819,7 +900,7 @@ const CARDS=[
   dflt:1,opts:[
    {l:"Blast him by name",d:"The base cheers or jeers by party; the sheriff fundraises off you either way.",fx:g=>{if(g.player.party==="R"){dAct(g,"gop",-6);dAp(g,-1);}else{dAct(g,"progs",5);dAp(g,0.5);}dAct(g,"ccpoa",-4);}},
    {l:"Note that sheriffs answer to their voters and the courts",d:"Constitutionally impeccable. Reads as weak on every chyron.",fx:g=>{dAp(g,-0.5);}},
-   {l:"Ask the AG to seek a writ",d:"Bonta's office decides, not you — but the ask is the story.",fx:g=>{dAct(g,"ccpoa",-5);dAct(g,"progs",4);}}]},
+   {l:"Ask the AG to seek a writ",d:"The AG's office decides, not you — but the ask is the story.",fx:g=>{dAct(g,"ccpoa",-5);dAct(g,"progs",4);}}]},
  {id:"film_poach",w:g=>1.2,t:"Georgia calls, again",
   b:g=>`A marquee streaming series — 1,400 jobs, nine months of stage work — has a term sheet from Georgia worth $40M more than California's credit can match. Entertainment wants an emergency allocation from the $750M film program. The LAO's literature on film credits is, to use their word, "skeptical."`,
   dflt:1,opts:[
@@ -945,6 +1026,7 @@ function newGame(cfg){
   const bg=BACKGROUNDS.find(b=>b.id===cfg.bgId);
   const g={
     seed:cfg.seed, scenario:cfg.scenario||"aswritten", phase:"play", turn:1, slots:3, over:false, overReason:null,
+    inheritedDeficit:35,
     player:{name:cfg.name,party:cfg.party,bg:bg.id,attrs:{...cfg.attrs},chest:bg.chest,
       promises:cfg.promises.slice(), margin:0, coalition:"", mandateNote:""},
     pc:0, approval:50, honeymoon:8,
@@ -956,7 +1038,7 @@ function newGame(cfg){
     market:{idx:100, peak:100, mode:"exuberant", hazard:TUNING.HAZARD0, corrLeft:0, corrRate:0, troughLeft:0, hist:[100], eras:[], revApplied:0},
     issues:{homeless:BASELINE.homeless_count.v, mediCal:BASELINE.medi_cal.v, prison:BASELINE.prison_pct.v,
       insur:38, unemp:BASELINE.unemployment.v, grid:BASELINE.grid_margin.v, fireYtd:0,
-      housingRate:9.2, housingCum:0, hsr:"seeking private capital", k12:BASELINE.k12_enroll.v,
+      housingRate:9.2, housingCum:0, hsr:"seeking private capital", hsrStage:0, k12:BASELINE.k12_enroll.v,
       homelessBoost:0, housingBoost:0, insurBoost:0, medicalBoost:0, prisonRelief:0},
     actors:{}, leg:{senD:30,senR:10,asmD:60,asmR:19}, legStanding:0,
     bills:{pipeline:[], desk:[], signed:[], vetoed:[], enactedIds:[]},
@@ -973,7 +1055,8 @@ function newGame(cfg){
       guardFederalized:false, marketNoteShown:false, reelection:null, ltgovHostile:false,
       snapLanded:false, laoBlast:false, disasterActive:null, sessionBillsDone:{},
       hr1Applied:0, gann:TUNING.GANN_HEADROOM0, marker:null, weakened:null, committeeChit:false,
-      primaryBlitz:false, recallSurvived:false, tips:{}},
+      primaryBlitz:false, recallSurvived:false, tips:{}, fiscalEmergencyY:0, bsaLastY:0,
+      waiverCd:0, lastPulpit:-9, senVacancy:false, senFilled:false, surgeY:0, hsrTried:0},
     hist:{approval:[], deficit:[], market:[], homeless:[], pc:[], insur:[], housing:[], medical:[], unemp:[]},
   };
   // actor init
@@ -997,13 +1080,26 @@ function newGame(cfg){
     inbox(g,"SCENARIO: The Correction Hits Early — the LAO's 'overheated' warning is about to cash out",null);}
   else if(g.scenario==="fireyear"){g.flags.fireYearForced=true;
     inbox(g,"SCENARIO: Fire Year — a catastrophic season is coming in year one",null);}
-  else if(g.scenario==="grandbargain"){g.legStanding+=20;g.fiscal.deficit=40;
+  else if(g.scenario==="grandbargain"){g.legStanding+=20;g.fiscal.deficit=40;g.inheritedDeficit=40; // MECH-3: graded against the RIGHT inheritance
     inbox(g,"SCENARIO: Grand Bargain — leadership likes you, and the hole is $5B deeper",null);}
+  // Cabinet: CONTINUITY walks in fully staffed; everyone else must actually build an administration (the transition set-piece)
+  if(bg.continuity){
+    AGENCIES.forEach(([code,full],i)=>g.cabinet.push({nm:APPOINTEE_NAMES[i%APPOINTEE_NAMES.length],agency:code,agencyFull:full,q:2,type:"holdover"}));
+    g.transitionOpen=false;
+  }else{
+    g.transitionOpen=true;
+    inbox(g,"STAFF THE ADMINISTRATION — 9 cabinet posts to fill (set-piece on The Desk). Unfilled posts run on acting deputies and drag every operational roll; caretakers get auto-named after March.","by Mar");
+  }
   // opening inbox & feed
   seedOpening(g,bg);
   return g;
 }
-function avgCabinetQ(g){if(!g.cabinet.length)return 2;return g.cabinet.reduce((s,c)=>s+c.q,0)/g.cabinet.length;}
+/* Confirmed members average against the full 9 posts; a vacancy counts as an acting deputy (1.5★). */
+function avgCabinetQ(g){
+  const filled=g.cabinet.filter(c=>!c.pending);
+  const vac=Math.max(0,AGENCIES.length-filled.length);
+  return (filled.reduce((s,c)=>s+c.q,0)+vac*1.5)/AGENCIES.length;
+}
 Object.assign2=(t,src)=>{for(const[k,v]of Object.entries(src))t[k]=(t[k]||0)+v;};
 function clampA(x){return Math.max(-100,Math.min(100,Math.round(x)));}
 function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
@@ -1084,7 +1180,8 @@ function roll(g,attr,diff,mods,ctx){
   let p=0.22+effAttr(g,attr,ctx)*0.055+(mods||0)-diff;
   if(g.honeymoon>0)p+=0.06;
   if(g.flags.transitionMalus>0)p-=0.10;
-  if(attr==="OPR")p+=(avgCabinetQ(g)-2)*0.03; // R2: cabinet quality moves operational rolls
+  if(attr==="OPR")p+=(avgCabinetQ(g)-2)*0.05; // R2: cabinet quality moves operational rolls; vacancies bite
+  if(g.flags.frameBonus){p+=0.15;g.flags.frameBonus=false;} // MECH-1: DOMINATE THE CYCLE's tailwind, real now
   p+=clamp((g.approval-48)/300,-0.05,0.05);
   p=clamp(p,0.04,0.95);
   const r=RNG.r();
@@ -1156,7 +1253,10 @@ function applyFx(g,fx,label,by){
           cov(g,"LAO","The Gann limit trips — the surplus is spoken for",
             `Tax-funded appropriations have exceeded the Prop 4 (1979) limit. The excess — roughly ${fmtB(excess)} — must by constitution be split between taxpayer rebates and schools. The windfall you were planning around is now a check with two other names on it. Last seen operating at scale: 1987, and again in the 2022 rebate round.`,
             "MODEL NOTE: Gann headroom uses an $8B placeholder starting value — UNVERIFIED (DOC §6.8 has no clean figure).");}
-        F.deficit=Math.max(0,F.deficit-Math.max(remaining,0));
+        F.deficit=clamp(F.deficit-Math.max(remaining,0),-18,99); // REAL-5: a boom can flip you into SURPLUS
+        if(F.deficit<-1&&!g.flags.surplusNoted){g.flags.surplusNoted=true;
+          cov(g,"LAO","The word the office almost never prints: surplus",
+            "Modeled revenues now exceed modeled spending — an operating surplus, the first since the COVID-era windfalls. The office's obligatory caveats, in order: it is one-time money wearing an ongoing costume; the Gann limit is watching; every interest group in the building has already spent it twice; and the structural drift (+5.8% spending vs +4% revenue) resumes eating it in January. Enjoy the adjective. Do not furnish the house with it.");}
       }
       if(fx.cov)cov(g,fx.cov.src,fx.cov.hl,fx.cov.bd,fx.mn);
       break;}
@@ -1208,6 +1308,11 @@ function stepMarket(g){
   }
   M.peak=Math.max(M.peak,M.idx);
   M.hist.push(M.idx);
+  // REAL-6: CalPERS/CalSTRS hold the same equities the AI trade inflated — the unfunded liability breathes with the index
+  if(M.mode==="correction")g.fiscal.pension=clamp(g.fiscal.pension+1.1,200,330);
+  else if(M.mode==="trough")g.fiscal.pension=clamp(g.fiscal.pension+0.5,200,330);
+  else if(M.mode==="recovery")g.fiscal.pension=clamp(g.fiscal.pension-0.55,200,330);
+  else g.fiscal.pension=clamp(g.fiscal.pension-0.1,200,330);
   // quarterly revenue translation (3–18 mo lag, staged, INCREMENTAL vs what's already applied)
   if(g.turn%3===0&&M.hist.length>12){
     const ago=M.hist[M.hist.length-13];
@@ -1244,6 +1349,45 @@ function voteModel(g,noise,opts){
   return {asm:Math.round(clamp(asm,0,L.asmD+L.asmR)),sen:Math.round(clamp(sen,0,L.senD+L.senR))};
 }
 
+/* ===================== 13c. CABINET STAFFING (transition + vacancies) ===================== */
+/* One function serves the turn-1 transition set-piece AND later vacancy fills — how it actually works:
+   you name a specific person to a specific post, and Senate Rules has opinions about some of them. */
+function cabinetVacancies(g){return AGENCIES.filter(([c])=>!g.cabinet.find(x=>x.agency===c));}
+function transitionPick(g,code,type){
+  const i=AGENCIES.findIndex(a=>a[0]===code);
+  if(i<0||g.cabinet.find(c=>c.agency===code))return null;
+  const full=AGENCIES[i][1];
+  const noBench=g.player.bg==="media";
+  const nm=candName(i,type);
+  if(type==="holdover"){
+    g.cabinet.push({nm,agency:code,agencyFull:full,q:Math.max(1,2-(noBench?1:0)),type});
+    if(!g.transitionOpen)cov(g,"Politico",`${nm} keeps the lights on at ${full}`,
+      "A holdover pick: instant confirmation, institutional memory, and no debts in either direction. The building's safest currency.");
+  }else if(type==="ally"){
+    g.cabinet.push({nm,agency:code,agencyFull:full,q:Math.max(1,2-(noBench?1:0)),type});
+    g.legStanding+=2;g.flags.committeeChit=true;
+    if(!g.transitionOpen)cov(g,"Politico",`A confirmable choice: ${nm} to ${full}`,
+      "Senate Rules scheduled the hearing before the press release finished sending. The building rewards those who staff it with its own — and a chair now owes you a courtesy on your next bill.");
+  }else{ // reformer — Senate Rules gets 2 months and a veto in practice
+    g.cabinet.push({nm,agency:code,agencyFull:full,q:Math.max(1,3-(noBench?1:0)),type,pending:true});
+    queue(g,2,{k:"fn",fn:"_confirm",code},`Senate Rules: confirmation of ${nm} (${code})`,"you");
+  }
+  return nm;
+}
+function transitionDeadline(g){ // end of March: acting deputies become caretakers, ready or not
+  if(!g.transitionOpen)return;
+  g.transitionOpen=false;
+  const vac=cabinetVacancies(g);
+  if(vac.length){
+    for(const [code,full] of vac)g.cabinet.push({nm:"A caretaker",agency:code,agencyFull:full,q:1,type:"caretaker"});
+    cov(g,"CalMatters",`The transition ends with ${vac.length} caretaker${vac.length>1?"s":""}`,
+      `March closed with ${vac.length} of the nine agency posts never formally filled — so the acting deputies became permanent-acting, the Capitol's saddest job title. ${vac.map(v=>v[1]).join(", ")} will run on autopilot (★, and it shows in every operational roll) until you FILL A CABINET VACANCY. Administrations are hired in January and judged in July; yours is now late to its own judging.`);
+  }else{
+    cov(g,"AP","The administration is staffed",
+      `All nine agency posts filled inside the transition window: ${g.cabinet.filter(c=>!c.pending).length} confirmed${g.cabinet.some(c=>c.pending)?", "+g.cabinet.filter(c=>c.pending).length+" still before Senate Rules":""}. The org chart is real now. So is the accountability.`);
+  }
+}
+
 /* ===================== 14. TURN LOOP ===================== */
 function endMonth(g){
   const d=turnDate(g.turn);
@@ -1262,15 +1406,30 @@ function endMonth(g){
   // 1. lag queue lands (with labels + attribution — R1/R3)
   const due=g.lag.filter(l=>l.due<=g.turn); g.lag=g.lag.filter(l=>l.due>g.turn);
   for(const l of due)applyFx(g,l.fx,l.label,l.by);
-  // 2. unresolved desk bills become law without signature
-  if(g.bills.desk.length&&d.m===9){
-    for(const b of g.bills.desk){
+  // 1b. an unsigned budget signs itself at the deadline — reluctantly, on the record
+  if(g.fiscal.budget.awaiting)finishEnactment(g,true);
+  // 2. unresolved desk bills become law without signature (Sept 30 rule; urgency bills after one month on the desk)
+  const autoEnact=g.bills.desk.filter(b=>d.m===9||b.urgent);
+  if(autoEnact.length){
+    for(const b of autoEnact){
       enactBill(g,b,"sign",true);
       cov(g,"CalMatters",`${b.num} becomes law without the governor's signature`,
         `${g.player.name} let the deadline pass. Under the Constitution the bill becomes law anyway — a signature withheld is a statement, not a veto. Both sides noticed.`);
     }
-    g.bills.desk=[];
+    g.bills.desk=g.bills.desk.filter(b=>!autoEnact.includes(b));
   }
+  // 2b. MISS-4: urgency bills get monthly floor votes — 2/3 for immediate effect, no waiting for August
+  for(const b of g.bills.pipeline.filter(x=>x.urgent&&x.stage==="floor")){
+    const v=voteModel(g,true,{});
+    if(v.asm>=54&&v.sen>=27){b.stage="passed";b.floorVotes=v;g.bills.desk.push(b);
+      cov(g,"AP",`URGENCY: ${b.num} clears two-thirds — ${v.asm}–${79-v.asm}, ${v.sen}–${40-v.sen}`,
+        `An urgency statute takes effect the moment it's signed — no waiting for January 1. The price is the supermajority you just spent: 54 and 27, counted in public. ${b.t} is on your desk NOW, and its effects follow within weeks, not quarters.`);}
+    else{b.urgentTries=(b.urgentTries||0)+1;
+      if(b.urgentTries>=3){b.stage="dead";
+        cov(g,"Politico",`${b.num} gives up on urgency — ${v.asm} of 54`,
+          `Three floor runs at two-thirds, three misses. The urgency clause comes off and the bill dies with it; the calendar wins again.`);}}
+  }
+  g.bills.pipeline=g.bills.pipeline.filter(b=>b.stage!=="dead");
   // 3. scheduled beats
   scheduledEvents(g,d);
   // 4. market weather
@@ -1291,6 +1450,7 @@ function endMonth(g){
   g.pc=clamp(g.pc+clamp(regen,1,7),0,110);
   if(g.flags.transitionMalus>0)g.flags.transitionMalus--;
   if(g.flags.weakened&&g.turn>g.flags.weakened.until)g.flags.weakened=null; // R4 decay
+  if(g.transitionOpen&&g.turn>=3)transitionDeadline(g); // the transition window closes with March
   // 10b. R7: promise betrayal set-pieces — detect open → broken transitions
   for(const ps of promiseStates(g)){
     const prev=g.prevPromise[ps.id];
@@ -1337,9 +1497,10 @@ function endMonth(g){
 function driftIssues(g,d){
   const I=g.issues,M=g.market;
   // homelessness: baseline gentle decline, recession pressure, housing & program boosts
-  let hPct=-0.15+(M.mode==="trough"||M.mode==="correction"?0.35:0)-(I.homelessBoost*0.02)-(I.housingBoost*0.004);
+  let hPct=TUNING.HOMELESS_BASE+(M.mode==="trough"||M.mode==="correction"?0.35:0)-(I.homelessBoost*0.055)-(I.housingBoost*0.004);
   if(g.actors.mayors>30)hPct-=0.04;
   I.homeless=Math.round(I.homeless*(1+hPct/100+RNG.norm(0,0.001)));
+  I.homelessBoost=Math.max(0,I.homelessBoost-0.06); // MECH-4: programs fade unless renewed
   // housing production (thousands/mo)
   I.housingRate=clamp(9.2*(1+I.housingBoost/100)*(M.mode==="trough"?0.7:M.mode==="correction"?0.85:1),4,20);
   I.housingCum+=I.housingRate;
@@ -1356,8 +1517,8 @@ function driftIssues(g,d){
   I.prison=clamp(I.prison+0.22-(I.prisonRelief*0.09)+RNG.norm(0,0.15),100,150);
   I.prisonRelief=Math.max(0,I.prisonRelief-0.02);
   // insurance stability
-  I.insur=clamp(I.insur+(I.insurBoost>0?0.5:0)-0.1,0,100);
-  I.insurBoost=Math.max(0,I.insurBoost-0.3);
+  I.insur=clamp(I.insur+clamp(I.insurBoost*0.22,0,3.2)-0.1,0,100); // MECH-5: big fixes now beat small ones
+  I.insurBoost=Math.max(0,I.insurBoost-0.35);
   // fire acres reset in Jan
   if(d.m===1)I.fireYtd=0;
 }
@@ -1451,10 +1612,14 @@ function scheduledEvents(g,d){
     }
   }
   if(m===6){ // June 15 enactment
-    if(!B.enacted)enactBudget(g);
+    if(B.proposed&&!B.revised&&!g.flags.maySkipNoted){g.flags.maySkipNoted=true; // MECH-9: hiding in May costs
+      dAp(g,-1.5);
+      cov(g,"LAO","The May Revision that wasn't",
+        "The administration declined to publish a serious May Revision — the constitutional rhythm calls for a public reckoning with April receipts, and the reckoning was skipped. The office notes, without further comment, that budgets built on unrevised January assumptions have a documented June-to-reality conversion problem.");}
+    if(!B.enacted&&!B.awaiting)enactBudget(g);
   }
   if(m===7){
-    if(!B.enacted){B.late++;
+    if(!B.enacted&&!B.awaiting){B.late++;
       cov(g,"AP","New fiscal year, no budget",
         "July 1 arrived without a signed budget. Under White v. Davis, only constitutionally and federally required payments continue. Legislators forfeit pay for every late day under Prop 25 — which concentrates minds in the building faster than any press conference of yours could.");
       dAp(g,-3);
@@ -1462,8 +1627,8 @@ function scheduledEvents(g,d){
     }
     if(y===2027){ // Lara & FAIR
       g.issues.insur=clamp(g.issues.insur-4,0,100);dAp(g,-1.5);
-      cov(g,"CalMatters","Lara approves FAIR Plan's 35.8% — and your phones melt",
-        "Insurance Commissioner Ricardo Lara's office approved the FAIR Plan's long-pending rate increase. You found out when the press release went out, because the Insurance Commissioner is elected by the same voters you are and answers to none of your staff. Homeowners are calling the governor's office anyway. That, it turns out, is the job: accountability without authority.");
+      cov(g,"CalMatters",OFFICERS.ins.nm.replace("Insurance Commissioner ","Commissioner ")+" approves FAIR Plan's 35.8% — and your phones melt",
+        OFFICERS.ins.nm+"'s office approved the FAIR Plan's long-pending rate increase — a filing inherited from the Lara era, decided by the successor the 2026 election installed alongside you. You found out when the press release went out, because the Insurance Commissioner is elected by the same voters you are and answers to none of your staff. Homeowners are calling the governor's office anyway. That, it turns out, is the job: accountability without authority.");
     }
   }
   if(m===8){ // suspense #2 + session end
@@ -1622,7 +1787,10 @@ function enactBudget(g,late){
   const votes=voteModel(g,true,{bonusSeats:late?5:0}); // Prop 25 pay forfeiture concentrates minds when late
   if(votes.asm<41||votes.sen<21){
     B.late=(B.late||0)+1;
-    cov(g,"AP",`The budget fails on the floor — ${votes.asm} of 41 in the Assembly, ${votes.sen} of 21 in the Senate`,
+    const shortfall=[];
+    if(votes.asm<41)shortfall.push(`${votes.asm} of 41 in the Assembly`);
+    if(votes.sen<21)shortfall.push(`${votes.sen} of 21 in the Senate`);
+    cov(g,"AP",`The budget fails on the floor — ${shortfall.join(", ")}`,
       `Not a metaphor: an actual roll-call failure, the kind the majority party schedules around precisely so it never happens. It happened. ${g.player.party==="D"?"Your own caucus left you "+(41-votes.asm)+" votes short in the Assembly — the progressives and the moderates finally agreed on something, and it was blaming you.":"The Democratic leadership brought a budget to the floor and lost its own members — your coalition-of-the-month with the moderates spooked the progressives into revolt."} Every day past June 15, legislators forfeit pay; every day past July 1, White v. Davis chokes the state's checkbook. The pressure this creates is real, and it is aimed at everyone.`);
     dAp(g,-2);
     return;
@@ -1630,8 +1798,8 @@ function enactBudget(g,late){
   let solved=0, taxNote="";
   if(mx){
     solved=mx.cuts+mx.reserves;
-    if(mx.taxes>0){ // the 2/3 vote, counted for real
-      const tv=voteModel(g,true,{});
+    if(mx.taxes>0){ // the 2/3 vote, counted for real — tax:true zeroes out Republican support (Prop 26 politics)
+      const tv=voteModel(g,true,{tax:true});
       const passed=tv.asm>=54&&tv.sen>=27;
       if(passed){solved+=mx.taxes;g.fiscal.taxSigned=true;g.fiscal.newTaxes+=mx.taxes;
         taxNote=` The revenue package cleared two-thirds — ${tv.asm} in the Assembly against the 54 needed, ${tv.sen} in the Senate against 27 — which will be taught in whip-count seminars for a decade.`;}
@@ -1641,20 +1809,50 @@ function enactBudget(g,late){
       queue(g,10,{k:"deficit",d:4},"Deferral repayment comes due","you");}
   }
   const rel=clamp(0.6+g.legStanding/300,0.35,0.95);
-  const finalSolve=solved*rel+(B.revised?1.5:0);
-  g.fiscal.deficit=Math.max(0,g.fiscal.deficit-finalSolve);
-  B.enacted=true;
-  // L4: the guarantee is recomputed at every enactment — Test 1 tracking modeled revenue
+  let finalSolve=solved*rel+(B.revised?1.5:0);
+  // REAL-2: the CONFERENCE COMMITTEE writes its own changes into your budget before it reaches you
+  const changes=[];
+  const vetoDiscount=B.vetoCount||0; // each veto makes them concede one demand
+  if(mx&&g.player.party!=="R"){
+    if(mx.taxes===0&&g.actors.progs>10&&changes.length<2-vetoDiscount&&RNG.chance(0.65)){
+      finalSolve+=2; g.fiscal.newTaxes+=2; B.confTax=true;
+      changes.push("Conference ADDED ~$2B in revenue your January plan didn't have — the progressives' price for their votes. Sign it and you signed a tax.");}
+    if(mx.cuts>=6&&g.actors.progs>25&&changes.length<2-vetoDiscount&&RNG.chance(0.5)){
+      finalSolve-=2;
+      changes.push("Conference RESTORED ~$2B of your cuts — the safety-net line the caucus would not cross.");}
+  }
+  if(mx&&g.legStanding<0&&changes.length<2-vetoDiscount&&RNG.chance(0.5)){
+    g.fiscal.gimmicks+=2;
+    changes.push("Conference slipped in ~$2B of deferrals and fund shifts nobody will explain on camera.");}
+  if(!B.proposed)changes.push("This is entirely the Legislature's budget — Rivas and Limón wrote it without you. Its priorities are theirs; its signature line is yours.");
+  B.awaiting={finalSolve:Math.max(finalSolve,0),changes,votes,taxNote,late:!!late};
+  cov(g,"AP",`Budget passes the Legislature ${votes.asm}–${79-votes.asm}, ${votes.sen}–${40-votes.sen} — and lands on YOUR desk`,
+    `${changes.length?"The conference committee did what conference committees do: "+changes.length+" change"+(changes.length>1?"s":"")+" you didn't ask for. ":""}The bill is on the desk (The Desk tab). Sign it, or veto it and eat the delay — Prop 25 docks legislator pay while you hold out, which is leverage on them, and White v. Davis strangles the treasury after July 1, which is leverage on everyone.${taxNote}`);
+}
+/* REAL-3: the actual signature decision */
+function finishEnactment(g,reluctant){
+  const B=g.fiscal.budget;if(!B.awaiting)return;
+  const A=B.awaiting;B.awaiting=null;B.enacted=true;
+  const mx=B.mix;
+  if(mx&&mx.reserves>0){const draw=Math.min(mx.reserves,g.fiscal.sfeu); // REAL-7: money moves at ENACTMENT
+    g.fiscal.sfeu-=draw;g.fiscal.resLao-=draw;g.fiscal.resAdmin-=draw;}
+  g.fiscal.deficit=clamp(g.fiscal.deficit-A.finalSolve,-18,99);
+  if(B.confTax)g.fiscal.taxSigned=true; // you signed the conference's tax — no_taxes knows
   const y=turnDate(g.turn).y;
   const newP98=Math.round((125.5+(y-2027)*2.4+(g.market.revApplied||0)*TUNING.P98_SHARE)*10)/10;
-  const p98Delta=newP98-g.fiscal.prop98;
   g.fiscal.prop98=Math.max(95,newP98);
-  const lateTxt=late?" — late, after Prop 25 docked legislator pay for "+RNG.int(8,25)+" days, a fact every member will privately blame on you":"";
-  cov(g,"AP",`Budget signed: ${votes.asm}–${79-votes.asm} Assembly, ${votes.sen}–${40-votes.sen} Senate${lateTxt}`,
-    (B.proposed?`The enacted budget resembles the January proposal the way a settlement resembles a complaint. Roughly ${fmtB(finalSolve)} of the structural problem was actually addressed; the remaining ${fmtB(g.fiscal.deficit)} annual gap rolls forward, compounding.${taxNote}`
-    :`With no executive proposal to anchor on, Rivas and Limón wrote the budget themselves and sent it down with a bow on it. You signed it because the alternative was explaining a government shutdown you also couldn't prevent. The building noticed who held the pen.`)
-    +` The Prop 98 guarantee recomputed at enactment: ${fmtB(g.fiscal.prop98)}${Math.abs(p98Delta)>0.5?" ("+(p98Delta>0?"+":"−")+fmtB(Math.abs(p98Delta)).slice(1)+" vs. the prior figure — the formula moved, nobody voted on it)":""}.`);
+  const lateTxt=A.late?" — late, after Prop 25 docked legislator pay, a fact every member will privately blame on you":"";
+  cov(g,"AP",`Budget signed${reluctant?" — at the deadline, without ceremony":""}${lateTxt}`,
+    `${reluctant?"No signing statement, no pens handed out — the signature happened because the alternative was worse, and everyone in the building can read a clock. ":""}Roughly ${fmtB(A.finalSolve)} of the structural problem was addressed; the ${g.fiscal.deficit<0?"books now show a modeled operating SURPLUS of "+fmtB(Math.abs(g.fiscal.deficit)):"remaining "+fmtB(g.fiscal.deficit)+" annual gap rolls forward, compounding"}. The Prop 98 guarantee recomputed at enactment: ${fmtB(g.fiscal.prop98)} — the formula moved, nobody voted on it.`);
+  if(reluctant)dAp(g,-0.5);
   if(!B.proposed){spendPC(g,5);g.legStanding-=5;}
+}
+function vetoBudget(g){
+  const B=g.fiscal.budget;if(!B.awaiting)return;
+  B.awaiting=null;B.vetoCount=(B.vetoCount||0)+1;B.late=(B.late||0)+1;B.confTax=false;
+  spendPC(g,6);g.legStanding-=8;dAp(g,-1.5);
+  cov(g,"AP",`VETOED: the governor sends the budget back`,
+    `The message was one page and the message was the point: not this budget. The Legislature now reconvenes conference with legislator pay forfeiting daily (Prop 25) and the White v. Davis clock running toward July 1 — pressure that lands on them AND you. History's ledger on budget vetoes is short and mixed; the building's memory of them is long and specific. Next month's version will concede something. So, probably, will you.`);
 }
 
 /* ===================== 17. BILLS ===================== */
@@ -1676,7 +1874,7 @@ function sessionEnd(g,y){
   // player floor bills resolve — L2: counted, not rolled
   for(const b of g.bills.pipeline.filter(b=>b.stage==="floor")){
     const chit=g.flags.committeeChit?2:0; if(chit)g.flags.committeeChit=false; // R4: ally-appointment die
-    const v=voteModel(g,true,{bonusSeats:chit});
+    const v=voteModel(g,true,{bonusSeats:chit,tax:!!b.needs23}); // 2/3 revenue bills get no GOP votes
     const needA=b.needs23?54:41, needS=b.needs23?27:21;
     if(v.asm>=needA&&v.sen>=needS){b.stage="passed";b.floorVotes=v;g.bills.desk.push(b);}
     else{b.stage="dead";
@@ -1706,15 +1904,15 @@ function enactBill(g,b,decision,silent){
     if(fx.gf)queue(g,4,{k:"deficit",d:-fx.gf});
     if(fx.tax)g.fiscal.taxSigned=true;
     if(b.id==="b_saas_repeal")g.flags.saasRepealed=true;
+    if(b.id==="b_insur")g.issues.insur=clamp(g.issues.insur+(b.urgent?8:4),0,100); // the announcement effect: carriers price the signal
     const iss=fx.issue||{};
-    if(iss.housingBoost)queue(g,5,{k:"issue",key:"housingBoost",d:iss.housingBoost});
-    if(iss.homelessBoost)queue(g,6,{k:"issue",key:"homelessBoost",d:iss.homelessBoost});
-    if(iss.insurBoost)queue(g,6,{k:"issue",key:"insurBoost",d:iss.insurBoost});
-    if(iss.medicalBoost)queue(g,4,{k:"issue",key:"medicalBoost",d:iss.medicalBoost});
-    if(iss.prisonRelief)queue(g,6,{k:"issue",key:"prisonRelief",d:iss.prisonRelief});
-    if(iss.pensionCut)queue(g,8,{k:"issue",key:"pensionCut",d:iss.pensionCut});
+    if(iss.housingBoost)queue(g,b.urgent?2:5,{k:"issue",key:"housingBoost",d:iss.housingBoost},"housing program ("+b.num+")","you");
+    if(iss.homelessBoost)queue(g,b.urgent?2:6,{k:"issue",key:"homelessBoost",d:iss.homelessBoost},"homeless program ("+b.num+")","you");
+    if(iss.insurBoost)queue(g,b.urgent?2:6,{k:"issue",key:"insurBoost",d:iss.insurBoost},"insur program ("+b.num+")","you");
+    if(iss.medicalBoost)queue(g,b.urgent?2:4,{k:"issue",key:"medicalBoost",d:iss.medicalBoost},"medical program ("+b.num+")","you");
+    if(iss.prisonRelief)queue(g,b.urgent?2:6,{k:"issue",key:"prisonRelief",d:iss.prisonRelief},"prison relief ("+b.num+")","you");
     if(fx.fedHeat)g.actors.fedadmin=clampA(g.actors.fedadmin-6);
-    if(iss.pensionCut)g.fiscal.pension=Math.max(180,g.fiscal.pension-iss.pensionCut);
+    if(iss.pensionCut)g.fiscal.pension=Math.max(180,g.fiscal.pension-iss.pensionCut); // MECH-6: single write, no dead queue
   }else{
     g.bills.vetoed.push(b.id);
     if(!silent)cov(g,"Politico",`Veto: ${b.num} (${b.t})`,
@@ -1722,20 +1920,40 @@ function enactBill(g,b,decision,silent){
   }
 }
 
-function hsrDecision(g){
-  const pr=g.player.promises.includes("finish_hsr");
+/* HSR is a PROJECT now, not a dice roll: three stages, each requiring the governor to actually do something.
+   Stage 0 → 1: court private capital (repeatable action, odds build with attempts)
+   Stage 1 → 2: lock the cap-and-invest collateral in a budget season
+   Stage 2 → 3: fund the Merced–Bakersfield operating segment (costs real money)   */
+const HSR_STAGE_TEXT=["seeking private capital — nobody has courted the investors yet",
+  "PRIVATE CAPITAL SECURED — collateral unprotected; lock the cap-and-invest stream (budget season)",
+  "financing locked — the operating segment needs funding (2 slots, real money)",
+  "Merced–Bakersfield funded and building — the promise is kept"];
+function hsrSetStage(g,n){g.issues.hsrStage=n;g.issues.hsr=g.flags.hsrKilled?"wound down; cap-and-invest $1B/yr redirected":HSR_STAGE_TEXT[n];}
+function hsrDecision(g){ // the Aug 2027 scripted beat is now PRESSURE, not resolution
   if(g.flags.hsrKilled)return;
-  let p=0.32+(g.actors.trades)/300+(pr&&g.flags.hsrPushed?0.25:0)+(g.player.attrs.COA-5)*0.02;
-  if(RNG.r()<clamp(p,0.05,0.9)){g.issues.hsr="private capital secured — Valley segment funded";
-    dAct(g,"trades",12);
-    cov(g,"AP","High-speed rail lands its private capital",
-      "A consortium — pension funds, a sovereign fund nobody wants to name, and the cap-and-invest revenue stream as collateral — closed the financing for Merced–Bakersfield. The $1B-a-year through 2045 did the persuading. Skeptics note the L.A. segment remains a rendering.");}
-  else{g.issues.hsr="private capital search failed — project on life support";
-    cov(g,"CalMatters","HSR's private-investor deadline passes quietly",
-      "The term sheet never came. The Authority will 'continue conversations,' which is what agencies say instead of obituaries. The $1B a year of cap-and-invest keeps the lights on and the litigation warm. Finishing — or killing — this is now squarely a decision for this governor.");}
+  if(g.issues.hsrStage>=1){
+    cov(g,"AP","HSR hits its investor deadline with money in hand",
+      "Because the governor's office personally worked the term sheet, the Authority's summer deadline arrived as a milestone instead of an obituary. The Valley segment has its consortium. What it does not yet have: protected collateral and an operating budget — both of which are decisions that sit, as everything does, on one desk in Sacramento.");
+  }else{
+    cov(g,"CalMatters","HSR's private-investor deadline passes quietly — because nobody courted the investors",
+      "The term sheet never came, and the file shows why: no calls from the horseshoe, no dinner with the sovereign funds, no collateral offer. The Authority will 'continue conversations,' which is what agencies say instead of obituaries. The ADVANCE HIGH-SPEED RAIL action exists precisely for this. Promises don't keep themselves; that is the entire finding of this newspaper's forty years covering this project.");
+    dAct(g,"trades",-4);
+  }
 }
 
 function resolveMeasures(g){
+  // MECH-2: hostile initiatives you ignored go to the voters — and can PASS
+  const hostileDue=g.measures.hostile.filter(h=>h.electionTurn&&h.electionTurn<=g.turn);
+  g.measures.hostile=g.measures.hostile.filter(h=>!h.electionTurn||h.electionTurn>g.turn);
+  for(const h of hostileDue){
+    let yes=(h.baseYes||52)+(48-g.approval)*0.3+RNG.norm(0,4);
+    const passed=yes>50;
+    cov(g,"AP",`${h.t}: ${passed?"PASSES":"FAILS"} (${Math.round(yes)}%–${100-Math.round(yes)}%)`,
+      passed?`You never spent a dollar against it, and the voters read your silence as consent. The measure is law now — qualified against you, passed around you, binding on you. ${h.backer?ACTORS.find(a=>a.id===h.backer).nm+" spent eight figures and got a constitution-adjacent trophy; their standing with their own members just went up, at your expense.":""} Ignoring a qualified initiative is a bet; you lost it.`
+      :`It failed without your help — the No side's money came from elsewhere and the polling gods were kind. You got away with ignoring a loaded gun on the ballot. The signature vendors will reload.`);
+    if(passed){dAp(g,-3);g.fiscal.deficit=clamp(g.fiscal.deficit+0.6,-18,99);
+      if(h.backer)dAct(g,h.backer,12);}
+  }
   const due=g.measures.pending.filter(m=>!m.electionTurn||m.electionTurn<=g.turn);
   g.measures.pending=g.measures.pending.filter(m=>m.electionTurn&&m.electionTurn>g.turn);
   for(const m of due){
@@ -1828,8 +2046,17 @@ function randomEvents(g,d){
   let scP=TUNING.SCANDAL_P+(g.player.bg==="media"&&g.turn<=12?0.03:0)+(2-avgCabinetQ(g))*0.012;
   if(RNG.chance(scP)){
     g.flags.scandalCount++;dAp(g,-3.5);spendPC(g,6);
-    cov(g,"Politico",RNG.pick(["Your parks director billed the state for a home gym","A deputy's texts surface — and they're about you","Appointee's résumé collapses under a records request","Contract steered to a donor's firm, emails show"]),
-      g.player.bg==="media"?"The vetting operation you don't have would have caught this. NO BENCH is a liability with a paper trail: the people who staff administrations spent decades not working for you.":"Staff scandal math is fixed: the appointee resigns in week two after 'wanting to fight it' in week one, and the governor wears it either way. You spend political capital on this whether you choose to or not.");
+    const confirmed=g.cabinet.filter(c=>!c.pending&&c.type!=="caretaker");
+    if(confirmed.length&&RNG.chance(0.55)){ // a NAMED member falls — the org chart bleeds
+      const victim=confirmed[RNG.int(0,confirmed.length-1)];
+      g.cabinet=g.cabinet.filter(c=>c!==victim);
+      cov(g,"Politico",`${victim.nm} resigns from ${victim.agencyFull} — ${RNG.pick(["expense records","a steered contract","a résumé that collapsed under a records request","texts that surfaced"])} did it`,
+        `Week one was "eager to fight these claims"; week two was the resignation letter, per the fixed arithmetic of staff scandals. ${victim.agencyFull} is now VACANT and running on an acting deputy — FILL A CABINET VACANCY, or let every operational roll carry the hole. The governor wears the departure either way; that part of the arithmetic is also fixed.`);
+      inbox(g,"VACANCY at "+victim.agency+" after the resignation — Fill a Cabinet Vacancy",null);
+    }else{
+      cov(g,"Politico",RNG.pick(["Your parks director billed the state for a home gym","A deputy's texts surface — and they're about you","Appointee's résumé collapses under a records request","Contract steered to a donor's firm, emails show"]),
+        g.player.bg==="media"?"The vetting operation you don't have would have caught this. NO BENCH is a liability with a paper trail: the people who staff administrations spent decades not working for you.":"Staff scandal math is fixed: the appointee resigns in week two after 'wanting to fight it' in week one, and the governor wears it either way. You spend political capital on this whether you choose to or not.");
+    }
   }
   // Court ruling
   if(RNG.chance(0.09)){
@@ -1845,9 +2072,11 @@ function randomEvents(g,d){
   }
   // Hostile initiative qualification
   if(RNG.chance(0.03)&&g.measures.hostile.length<2){
-    const h=RNG.pick([["Attorney-fee cap initiative (Uber-backed) qualifies","caoc"],["Public-sector strike-rights measure qualifies","chamber"],["'Taxpayer protection' supermajority measure qualifies","progs"]]);
-    g.measures.hostile.push(h[0]);
-    cov(g,"AP",h[0],"874,641 valid signatures, certified by the Secretary of State — whose office you also do not control. Someone else's money just put something on your ballot. You can OPPOSE it, spend for it, or stay out and let the proxies fight.");
+    const h=RNG.pick([["Attorney-fee cap initiative (platform-backed)","tech"],["Public-sector strike-rights measure","seiu"],["'Taxpayer protection' supermajority measure","chamber"]]);
+    const eTurn=g.turn<=21?23:47;
+    g.measures.hostile.push({t:h[0],backer:h[1],baseYes:50+RNG.int(0,6),electionTurn:eTurn});
+    cov(g,"AP",h[0]+" qualifies for the "+(eTurn===23?"Nov 2028":"Nov 2030")+" ballot",
+      "874,641 valid signatures, certified by the Secretary of State — whose office you also do not control. Someone else's money just put something on your ballot, with an election date attached. OPPOSE it and it likely dies; ignore it and the voters decide without you — a bet governors have lost before.");
   }
   // Grid stress Aug–Sep
   if((m===8||m===9)&&I.grid<16&&RNG.chance(0.4)){
@@ -1867,6 +2096,14 @@ function randomEvents(g,d){
       "The panel's language has shifted from 'the State shall' to 'the Governor personally.' Receiverships outrank elections. Three warnings is the end of this administration.");
   }
   if(I.prison<136)g.flags.capBreachedThisYear=0;
+  // MISS-1: a U.S. Senate seat opens — the enormous national event (rare, once per game)
+  if(!g.flags.senVacancy&&g.turn>=8&&RNG.chance(0.012)){
+    g.flags.senVacancy=true;
+    inbox(g,"U.S. SENATE VACANCY — the appointment is yours alone (FILL THE U.S. SENATE VACANCY, 2 slots)","NOW");
+    cov(g,"AP","A United States Senate seat from California is VACANT",
+      "The senior senator's retirement letter reached the Secretary of the Senate this morning, and within the hour every television truck in Sacramento was parked outside the horseshoe. The Constitution's answer is brutally simple: the governor appoints, alone — no confirmation, no commission, no legislature. Thirty-nine million people are represented by one signature you have not yet written. Every faction you have ever disappointed is currently drafting its shortlist memo; every donor is suddenly very available for dinner. The DOC calls this the office's most consequential unilateral power. It is also the loneliest.");
+    dAp(g,0.5);
+  }
   // Capitol Notebook — the atmospheric column (quarterly, deterministic slot, seeded pick)
   if(g.turn%4===2){
     const nb=RNG.pick([
@@ -1960,9 +2197,10 @@ function actorBehaviors(g,d){
   for(const id of MONEYED){
     if(g.actors[id]<=-60&&RNG.chance(0.05)&&g.measures.hostile.length<3){
       const a=ACTORS.find(x=>x.id===id);
-      g.measures.hostile.push(a.nm+" ballot campaign");
-      cov(g,"Politico",a.nm+" goes to the ballot against you",
-        "At existential opposition, interest groups stop lobbying and start qualifying. Signature gathering is a commodity — about $9 a name — and "+a.nm+" has the money.");
+      const eTurn=g.turn<=21?23:47;
+      g.measures.hostile.push({t:a.nm+"'s ballot measure",backer:id,baseYes:51+RNG.int(0,6),electionTurn:eTurn});
+      cov(g,"Politico",a.nm+" goes to the ballot against you — "+(eTurn===23?"Nov 2028":"Nov 2030"),
+        "At existential opposition, interest groups stop lobbying and start qualifying. Signature gathering is a commodity — about $9 a name — and "+a.nm+" has the money. It now has an election date too. Ignored initiatives get VOTED ON.");
       dAp(g,-1);
     }
   }
@@ -2029,7 +2267,8 @@ function buildLegacy(g){
   const kept=ps.filter(p=>p.state==="kept").length;
   const F=g.flags,fi=g.fiscal,I=g.issues;
   const alienated=ACTORS.filter(a=>g.actors[a.id]<=-60).map(a=>a.nm);
-  const deficitDelta=fi.deficit-35;
+  const inh=g.inheritedDeficit||35;
+  const deficitDelta=fi.deficit-inh;
   // R3: your fingerprints — attributed, landed effects vs. the drift
   const yours=g.landedLog.filter(l=>l.by==="you");
   const fingerprints={
@@ -2070,7 +2309,8 @@ function buildLegacy(g){
 function buildCounterfactual(g){
   const lines=[];
   lines.push(`THE LAO BASELINE — what the machine would have done without you:`);
-  lines.push(`• The structural deficit was ~$35B/yr before you walked in. Baseline drift (spending +5.8%/yr vs revenue +4%) would have carried it to ~${fmtB(35+2.1*3+0.9*3)} by 2031 with no action at all. You leave ${fmtB(g.fiscal.deficit)}.`);
+  const inh0=g.inheritedDeficit||35;
+  lines.push(`• The structural deficit was ~${fmtB(inh0,0)}/yr before you walked in. Baseline drift (spending +5.8%/yr vs revenue +4%) would have carried it to ~${fmtB(inh0+2.1*3+0.9*3)} by 2031 with no action at all. You leave ${g.fiscal.deficit<0?"a modeled SURPLUS of "+fmtB(Math.abs(g.fiscal.deficit)):fmtB(g.fiscal.deficit)}.`);
   if(g.flags.marketCorrected)lines.push(`• The market correction was never yours to control. The LAO called the enacted forecast "overly exuberant" in November 2025 — fourteen months before your inauguration. The correction would have arrived for any governor. What varied was the response.`);
   else lines.push(`• The market held through your term. The LAO's "overly exuberant" warning never cashed out — you governed in the good timeline, and some of your numbers are luck wearing a suit.`);
   lines.push(`• Homelessness was already declining (−2.8% in 2025, the first drop ever recorded) before you took office. The baseline path reaches ~${Math.round(181934*Math.pow(0.982,4)).toLocaleString()} by 2031 with no state action. Judge your ${g.issues.homeless.toLocaleString()} against that, not against zero.`);
@@ -2104,30 +2344,32 @@ const ACTIONS=[
   run:(g,c)=>{g.fiscal.deficit=Math.max(0,g.fiscal.deficit-1.5);g.legStanding-=8;dAct(g,"progs",-6);dAct(g,"mods",-6);
     cov(g,"CalMatters","The blue pencil comes out",
       "$1.5B in reductions — district projects, augmentations, a museum with a powerful friend. The override threshold is two-thirds and overrides essentially never happen, so the cuts stand. So does the grudge ledger. Every member whose item died just became a harder vote.");}},
- {id:"appoint",nm:"Make an Appointment",cat:"Constitutional",slots:1,pc:2,
-  when:g=>true,
-  choices:g=>{const open=AGENCIES.filter(([code])=>!g.cabinet.find(c=>c.agency===code));
-    const nextAg=open.length?open[0]:null;
-    return [{id:"ally",nm:"A caucus ally"+(nextAg?" → "+nextAg[0]:""),d:"Confirmation glides through Senate Rules; the Legislature banks a favor; a reliable (quality ★★) operator joins the cabinet. Also banks a committee chit for your next bill.",cost:"+leg standing"},
-    {id:"reform",nm:"A reformer"+(nextAg?" → "+nextAg[0]:""),d:"Signals independence. INS roll — success seats a ★★★ operator whose quality improves every operational roll you make; failure is public.",cost:"INS roll"},
-    {id:"judge",nm:"Appellate justice",d:"Goes to the Commission on Judicial Appointments — the Chief Justice, the AG, a senior presiding justice. NOT the Senate.",cost:"Legacy pick"}];},
-  run:(g,c)=>{
-    const open=AGENCIES.filter(([code])=>!g.cabinet.find(cb=>cb.agency===code));
-    const ag=open.length?open[RNG.int(0,open.length-1)]:AGENCIES[RNG.int(0,AGENCIES.length-1)];
-    const nm=APPOINTEE_NAMES[(g.cabinet.length+RNG.int(0,3))%APPOINTEE_NAMES.length];
-    const noBench=g.player.bg==="media";
-    if(c==="ally"){const q=Math.max(1,2-(noBench?1:0));
-      g.cabinet.push({nm,agency:ag[0],agencyFull:ag[1],q});
-      g.legStanding+=6;dAct(g,"mods",4);g.flags.committeeChit=true; // R4: a permanent friend in the committee process
-      cov(g,"Politico",`A confirmable choice: ${nm} to ${ag[1]}`,
-        `Senate Rules scheduled the hearing before the press release finished sending. The building rewards those who staff it with its own — and the chair whose former deputy just got an agency owes you a courtesy on your next bill. Cabinet quality: ${"★".repeat(q)}. The building runs on exactly this currency.`);}
-    else if(c==="reform"){const r=roll(g,"INS",noBench?0.25:0.1,0);
-      if(r.ok){const q=Math.max(1,3-(noBench?1:0));
-        g.cabinet.push({nm,agency:ag[0],agencyFull:ag[1],q});
-        dAp(g,1);cov(g,"CalMatters",`An outsider gets the nod — ${nm} survives Rules, takes ${ag[1]}`,
-        `The confirmation took months and cost chits, but the signal landed, and so did a ${"★".repeat(q)} operator. Every operational roll this administration makes now runs through a slightly better machine — competence compounds invisibly, which is why nobody campaigns on it.`);}
-      else{dAp(g,-2);spendPC(g,4);cov(g,"Politico","Confirmation collapses in Senate Rules",noBench?"The vetting file was thin because your bench is thin — NO BENCH, priced mechanically now: your appointees run a star short and your scandal rate knows it. The nominee withdrew 'to spend time with family,' the Capitol's oldest cause of death.":"Senate Rules sat on it for eleven months, then let it die of exposure. The message was for you, not the nominee.");}}
-    else{dAp(g,0.5);cov(g,"CalMatters","A justice, confirmed by three people you mostly don't control","The Commission on Judicial Appointments — Chief Justice, Attorney General, senior presiding justice — confirmed your appellate pick. Note the Senate's absence from that sentence; judicial confirmation runs on a different track entirely, and one of the three votes belongs to a rival.");}}},
+ {id:"appoint",nm:"Fill a Cabinet Vacancy",cat:"Constitutional",slots:1,pc:2,
+  when:g=>{if(g.transitionOpen)return "Initial staffing runs through the transition set-piece on The Desk";
+    const vac=cabinetVacancies(g);
+    const caretakers=g.cabinet.filter(c=>c.type==="caretaker").length;
+    return (vac.length||caretakers)?true:"No vacancies — the cabinet is fully staffed";},
+  choices:g=>{
+    // vacancies proper, plus caretaker posts you can upgrade with a real nominee
+    const slots=cabinetVacancies(g).concat(g.cabinet.filter(c=>c.type==="caretaker").map(c=>[c.agency,c.agencyFull]));
+    const out=[];
+    for(const [code,full] of slots.slice(0,3)){
+      const i=AGENCIES.findIndex(a=>a[0]===code);
+      out.push({id:code+":ally",nm:`${full}: ${candName(i,"ally")}, a caucus ally`,
+        d:"A termed-out legislator with friends in Rules. Confirms instantly (★★); the Legislature banks the favor and a chair owes you a committee courtesy.",cost:"+leg standing"},
+      {id:code+":reformer",nm:`${full}: ${candName(i,"reformer")}, an outside reformer`,
+        d:"A theory-of-change hire. Senate Rules gets ~2 months and, in practice, a veto — ★★★ if it lands, a public collapse if it doesn't.",cost:"confirmation risk (INS)"});}
+    return out;},
+  run:(g,c)=>{const [code,type]=c.split(":");
+    g.cabinet=g.cabinet.filter(x=>!(x.agency===code&&x.type==="caretaker")); // a real nominee replaces the caretaker
+    transitionPick(g,code,type);
+    if(type==="reformer")cov(g,"Politico",`A nomination for ${AGENCIES.find(a=>a[0]===code)[1]} heads to Senate Rules`,
+      "The paperwork went up this morning; the hearing is 'to be calendared,' which is Rules-speak for 'we'll see.' Two months, give or take a grudge. The post runs on an acting deputy until then.");}},
+ {id:"judicial",nm:"Judicial Appointment",cat:"Constitutional",slots:1,pc:2,
+  when:g=>{const y=turnDate(g.turn).y;return g.flags.judicialY!==y?true:"One appellate seat per year in this model";},
+  run:(g,c)=>{g.flags.judicialY=turnDate(g.turn).y;dAp(g,0.5);
+    cov(g,"CalMatters","A justice, confirmed by three people you mostly don't control",
+      "The Commission on Judicial Appointments — Chief Justice, Attorney General, senior presiding justice — confirmed your appellate pick. Note the Senate's absence from that sentence; judicial confirmation runs on a different track entirely, and one of the three votes belongs to a rival. The pick outlasts your term by design: twelve-year terms, retention elections, and no recalls of your calls.");}},
  {id:"eo",nm:"Executive Order",cat:"Constitutional",slots:1,pc:2,
   when:g=>true,
   choices:g=>[{id:"homeless",nm:"Encampment resolution directive",d:"Direct agencies + condition state grants on encampment action. Effect in 1–3 turns.",cost:"Mayors bristle"},
@@ -2150,7 +2392,7 @@ const ACTIONS=[
   when:g=>g.flags.disasterActive||g.fiscal.deficit>20?true:"Requires a qualifying emergency (disaster, or fiscal for BSA purposes)",
   choices:g=>{const out=[];
     if(g.flags.disasterActive)out.push({id:"disaster",nm:"Disaster emergency (CESA)",d:"Suspend statutes, expedite procurement, unlock mutual aid. Immediate. The Legislature can terminate it by concurrent resolution.",cost:""});
-    if(g.fiscal.deficit>20&&!g.flags.fiscalEmergency)out.push({id:"fiscal",nm:"Budget emergency (Prop 2)",d:"The legal predicate for touching the BSA. Requires you to say the word 'emergency' about your own budget, on camera.",cost:"Approval −1"});
+    if(g.fiscal.deficit>20&&g.flags.fiscalEmergencyY!==turnDate(g.turn).y)out.push({id:"fiscal",nm:"Budget emergency (Prop 2) — "+turnDate(g.turn).y,d:"The legal predicate for touching the BSA THIS YEAR — the declaration expires with the calendar and must be renewed, on camera, annually.",cost:"Approval −1"});
     return out;},
   run:(g,c)=>{
     if(c==="disaster"){const da=g.flags.disasterActive;da.handled=true;g.flags.emergency=da.type;
@@ -2160,18 +2402,22 @@ const ACTIONS=[
         r.ok?"Mutual aid flowing, procurement rules suspended, a command post with the governor visibly in it. Crises are the one genre where the office's power matches its billing — and competence is legible on camera."
         :"The declaration came fast; the execution wobbled. Two counties waited days for resources while the paperwork found itself. The bar for emergencies is Newsom-at-the-fires, and the clips are unforgiving.");
       queue(g,3,{k:"fn",fn:"_clearEmergency"});}
-    else{g.flags.fiscalEmergency=true;dAp(g,-1);
+    else{g.flags.fiscalEmergency=true;g.flags.fiscalEmergencyY=turnDate(g.turn).y;dAp(g,-1);
       cov(g,"CalMatters","Governor declares a budget emergency","The Prop 2 predicate is now in place: a majority of each house can authorize a rainy-day withdrawal — capped at half the balance in year one. The declaration itself is a headline your opponents will laminate.");}}},
  {id:"bsa",nm:"Withdraw from the BSA",cat:"Fiscal maneuvers",slots:1,pc:5,
   when:g=>true,
-  gate:g=>!g.flags.fiscalEmergency?WALLS.find(w=>w.id==="w_bsa").txt:null,
-  choices:g=>{const max=g.flags.bsaTakenY1?g.fiscal.bsa:g.fiscal.bsa*0.5;
-    return [{id:"take",nm:`Withdraw ${fmtB(max)} (${g.flags.bsaTakenY1?"remainder — second consecutive emergency year":"≤50% in year one"})`,
-      d:"Requires majority vote of each house — a roll on your legislative standing.",cost:"Reserves are one-time; the deficit is annual"}];},
+  gate:g=>g.flags.fiscalEmergencyY!==turnDate(g.turn).y?WALLS.find(w=>w.id==="w_bsa").txt:null,
+  choices:g=>{const y=turnDate(g.turn).y;
+    const consec=g.flags.bsaTakenY1&&g.flags.bsaLastY===y-1; // REAL-8: remainder ONLY in the second CONSECUTIVE emergency year
+    const max=consec?g.fiscal.bsa:g.fiscal.bsa*0.5;
+    return [{id:"take",nm:`Withdraw ${fmtB(max)} (${consec?"remainder — second consecutive emergency year":"≤50% — Prop 2 first-year cap"})`,
+      d:"Requires majority vote of each house — counted. Skip a year and the 50% cap resets; the voters wrote it that way on purpose.",cost:"Reserves are one-time; the deficit is annual"}];},
   run:(g,c)=>{const v=voteModel(g,true,{});
-    if(v.asm>=41&&v.sen>=21){const amt=g.flags.bsaTakenY1?g.fiscal.bsa:Math.round(g.fiscal.bsa*0.5*10)/10;
+    if(v.asm>=41&&v.sen>=21){const y=turnDate(g.turn).y;
+      const consec=g.flags.bsaTakenY1&&g.flags.bsaLastY===y-1;
+      const amt=consec?g.fiscal.bsa:Math.round(g.fiscal.bsa*0.5*10)/10;
       g.fiscal.bsa-=amt;g.fiscal.resLao-=amt;g.fiscal.resAdmin-=amt;g.fiscal.deficit=Math.max(0,g.fiscal.deficit-amt*0.55);
-      g.flags.bsaTakenY1=true;
+      g.flags.bsaTakenY1=true;g.flags.bsaLastY=y;
       cov(g,"CalMatters",`The rainy-day fund pays out ${fmtB(amt)} — ${v.asm}–${79-v.asm}, ${v.sen}–${40-v.sen}`,
         "Both houses signed off, on the record. The LAO's reminder, printed verbatim as always: reserves are one-time money and the deficit is annual — this buys a year, not a solution. The next downturn now arrives to a thinner cushion.");}
     else{spendPC(g,3);cov(g,"Politico",`The Legislature declines to open the vault — ${v.asm} of 41`,
@@ -2274,8 +2520,10 @@ const ACTIONS=[
  /* ---- Political ---- */
  {id:"pulpit",nm:"Bully Pulpit",cat:"Political",slots:1,pc:2,
   when:g=>true,
-  run:(g,c)=>{g._pulpit=true;const r=roll(g,"CHA",0.05,0);
-    if(r.ok){dAp(g,g.player.bg==="media"?2.6:1.6);
+  run:(g,c)=>{g._pulpit=true;
+    const gap=g.turn-g.flags.lastPulpit;g.flags.lastPulpit=g.turn;
+    const r=roll(g,"CHA",0.05+(gap<3?0.15:0),0); // BAL-5: the novelty law
+    if(r.ok){dAp(g,(g.player.bg==="media"?2.6:1.6)*(gap<3?0.5:1));
       cov(g,"AP","The governor takes the case to the cameras","A statewide swing — morning drive in Fresno, an evening hit in L.A. The office's informal power is real: the only politician 39 million people can name has the only microphone they all can hear."+(g.player.bg==="media"?" DIRECT-TO-CAMERA: you did this for a living. It lands at 1.6×.":""));}
     else{dAp(g,-0.5);cov(g,"Politico","A messaging week that didn't","The tour happened; the needle didn't move. The clips led with a heckler in Bakersfield. Even the bully pulpit obeys the law of diminishing novelty.");}
     g._pulpit=false;}},
@@ -2315,14 +2563,24 @@ const ACTIONS=[
       `Their ask was never secret: ${a.wants.toLowerCase()}. ${marked?"The private meeting paid off — the marker you banked turned a transaction into a relationship, and the terms show it. ":""}You gave enough to move the relationship; their rivals read the term sheet before you finished signing. Interest groups are not vending machines — this purchase came with a counterparty and a memory.`);}},
  {id:"sponsor",nm:"Sponsor Legislation",cat:"Political",slots:1,pc:4,
   when:g=>{const m=turnDate(g.turn).m;return m<=6?true:"Introduce by June (crossover); next window in January";},
-  choices:g=>SPONSOR_TOPICS.filter(([,,bid])=>!g.bills.enactedIds.includes(bid)&&!g.bills.pipeline.find(b=>b.id===bid)).map(([tid,nm,bid])=>{
+  choices:g=>{
+    const base=SPONSOR_TOPICS.filter(([,,bid])=>!g.bills.enactedIds.includes(bid)&&!g.bills.pipeline.find(b=>b.id===bid)).map(([tid,nm,bid])=>{
+      const b=BILL_POOL.find(x=>x.id===bid);
+      return {id:bid,nm:nm+" ("+b.num+")",d:b.d,cost:b.needs23?"NEEDS 2/3 — 54 & 27":"Path: committee → suspense file → floor → your desk (3–9 turns)"};});
+    for(const uid of ["b_insur","b_medbackfill"]){ // MISS-4: urgency statutes — 2/3, immediate effect, no calendar
+      if(!g.bills.enactedIds.includes(uid)&&!g.bills.pipeline.find(b=>b.id===uid)){
+        const b=BILL_POOL.find(x=>x.id===uid);
+        base.push({id:uid+"|U",nm:"⚡ URGENCY: "+b.t+" ("+b.num+")",
+          d:b.d+" As an urgency statute it skips the suspense file, gets monthly floor votes, and takes effect the day you sign — the only way a legislative fix lands inside a year-one deadline.",
+          cost:"NEEDS 2/3 — 54 & 27, counted monthly; 3 misses kills it"});}}
+    return base;},
+  run:(g,c)=>{const urgent=c.endsWith("|U");const bid=urgent?c.slice(0,-2):c;
     const b=BILL_POOL.find(x=>x.id===bid);
-    return {id:bid,nm:nm+" ("+b.num+")",d:b.d,cost:b.needs23?"NEEDS 2/3 — 54 & 27":"Path: committee → suspense file → floor → your desk (3–9 turns)"};}),
-  run:(g,c)=>{const b=BILL_POOL.find(x=>x.id===c);
-    g.bills.pipeline.push({...b,stage:"committee",sponsored:true,introTurn:g.turn});
+    g.bills.pipeline.push({...b,stage:"committee",sponsored:true,urgent,introTurn:g.turn});
     if(c==="b_pension"){g._eduCut=false;dAct(g,"cta",-8);dAct(g,"seiu",-8);}
     queue(g,2,{k:"fn",fn:"_advanceCommittee"});
-    cov(g,"CalMatters",`Administration bill drops: ${b.num}, ${b.t}`,
+    cov(g,"CalMatters",`Administration bill drops: ${b.num}, ${b.t}${urgent?" — WITH AN URGENCY CLAUSE":""}`,
+      urgent?`${b.d} The urgency clause changes everything about the path: no suspense file, monthly floor votes, immediate effect on signature — and a two-thirds price (54 and 27) that will be counted in public every month it fails. This is how you legislate against a deadline.`:
       `${b.d} Sponsors secured, co-authors listed, and now the gauntlet: policy committee, then the Appropriations suspense file — where fiscal bills go to be held and released or killed in bulk, without recorded votes, on the chair's schedule and no one else's.`);}},
  {id:"suspensecall",nm:"Suspense File Call",cat:"Political",slots:1,pc:8,
   when:g=>g.player.bg!=="leg"?"Legislative Leader feature":
@@ -2355,7 +2613,7 @@ const ACTIONS=[
   when:g=>g.measures.hostile.length?true:"No hostile measure pending",
   run:(g,c)=>{const m=g.measures.hostile.shift();g.player.chest=Math.max(0,g.player.chest-5);dAp(g,0.5);
     cov(g,"AP","Governor headlines the 'No' campaign — and it works, eventually",
-      `Against "${m}": $5M from the war chest, a barnstorm, and your face in the ads — which makes the measure a referendum on you, a bet your strategists flagged in writing. The measure's backers quietly shelved it for this cycle. They will be back; the signature vendors offer loyalty pricing.`);}},
+      `Against "${m.t||m}": $5M from the war chest, a barnstorm, and your face in the ads — which makes the measure a referendum on you, a bet your strategists flagged in writing. The measure's backers quietly shelved it for this cycle. They will be back; the signature vendors offer loyalty pricing.`);}},
  {id:"meeting",nm:"Private Meeting",cat:"Political",slots:1,pc:1,
   when:g=>true,
   choices:g=>ACTORS.map(a=>({id:a.id,nm:a.nm,d:"Standing "+(g.actors[a.id]>0?"+":"")+g.actors[a.id],cost:""})),
@@ -2379,8 +2637,9 @@ const ACTIONS=[
 
  /* ---- Federal ---- */
  {id:"waiver",nm:"Negotiate a Federal Waiver",cat:"Federal",slots:2,pc:5,
-  when:g=>true,
-  run:(g,c)=>{const wp=g.player.bg==="fed"?0.18:0;
+  when:g=>g.turn>=g.flags.waiverCd?true:"CMS won't reopen the file until ~"+turnDate(g.flags.waiverCd).label,
+  run:(g,c)=>{g.flags.waiverCd=g.turn+6; // BAL-4: one serious waiver conversation per half-year
+    const wp=g.player.bg==="fed"?0.18:0;
     const r=roll(g,"FED",0.3,wp+g.actors.fedadmin/300);
     if(r.ok){g.flags.dealsDC++;g.fiscal.deficit=Math.max(0,g.fiscal.deficit-1.2);queue(g,3,{k:"issue",key:"medicalBoost",d:0.3});
       cov(g,"AP","Against the odds: a Medi-Cal waiver clears CMS",
@@ -2401,7 +2660,7 @@ const ACTIONS=[
   gate:g=>null,
   run:(g,c)=>{const ok=RNG.chance(0.5+(g.player.party==="D"?0.2:0));
     if(ok){g.flags.fightsDC++;dAct(g,"progs",4);
-      cov(g,"AP","California sues — the AG agreed to bring it","You asked; the Attorney General, after their own vetting and on their own timetable, agreed the case was worth their office's name. Note the verbs. You cannot order this — Bonta's office decides what California litigates, and today your interests aligned. Today.");}
+      cov(g,"AP","California sues — the AG agreed to bring it","You asked; the Attorney General, after their own vetting and on their own timetable, agreed the case was worth their office's name. Note the verbs. You cannot order this — the AG's office decides what California litigates, and today your interests aligned. Today.");}
     else cov(g,"Politico","The AG passes on your lawsuit",
       "'The office concludes the claim is not viable at this time.' Translation available from any Capitol veteran: the AG has their own race to run and your fight didn't poll. The plural executive is eight separate ambitions wearing one letterhead.");}},
  {id:"delegation",nm:"Activate the Delegation",cat:"Federal",slots:1,pc:4,
@@ -2431,13 +2690,26 @@ ACTIONS.push({id:"blitz",nm:"Primary Campaign Blitz",cat:"Political",slots:1,pc:
 
 /* lag fns used by actions */
 LAG_FNS._clearEmergency=g=>{g.flags.emergency=null;};
+LAG_FNS._confirm=(g,fx)=>{
+  const c=g.cabinet.find(x=>x.agency===fx.code&&x.pending);if(!c)return;
+  const slow=g.player.party==="R"?0.15:0; // a Democratic Senate Rules Committee reads Republican nominees slowly
+  const r=roll(g,"INS",(g.player.bg==="media"?0.25:0.1)+slow,0);
+  if(r.ok){c.pending=false;dAp(g,0.5);
+    cov(g,"CalMatters",`${c.nm} confirmed to ${c.agencyFull}`,
+      "The outsider survived Senate Rules — months of chits and courtesy calls, but the signal landed: this administration hires on theory of change, not seniority. A ★★★ operator is now inside the machine, and every operational roll runs slightly better for it.");}
+  else{g.cabinet=g.cabinet.filter(x=>x!==c);dAp(g,-1.5);spendPC(g,3);
+    cov(g,"Politico",`Confirmation collapses: ${c.nm} withdraws from ${c.agencyFull}`,
+      (g.player.bg==="media"?"The vetting file was thin because your bench is thin — NO BENCH, priced mechanically. ":"")+
+      (g.player.party==="R"?"A Democratic Senate Rules Committee sat on a Republican governor's nominee for months, then let it die of exposure. The message was for you, not the nominee. ":"Senate Rules sat on it, leaked from it, and finally starved it. ")+
+      "The nominee withdrew 'to spend time with family,' the Capitol's oldest cause of death. The post is VACANT — an acting deputy runs it (badly) until you fill it.");}
+};
 LAG_FNS._defederalize=g=>{g.flags.guardFederalized=false;
   cov(g,"AP","Washington releases the Guard",
     "The federalization order lapsed without ceremony — a two-line memo, four thousand soldiers back under state command, and no acknowledgment that anything had been proven by any of it. Your adjutant general has resumed issuing orders instead of receiving them.");};
 LAG_FNS._advanceCommittee=g=>{
   for(const b of g.bills.pipeline)if(b.stage==="committee"){
     const p=clamp(0.6+(g.player.attrs.INS-5)*0.03+g.legStanding/300,0.2,0.95);
-    if(RNG.r()<p){b.stage="suspense";
+    if(RNG.r()<p){b.stage=b.urgent?"floor":"suspense";
       cov(g,"CalMatters",`${b.num} clears policy committee — next stop, the suspense file`,
         "The easy part is over. Appropriations holds fiscal bills in bulk and disposes of them in bulk — twice a year, in minutes, without recorded individual votes. Yours now waits with several hundred others for the chair's list.");}
     else{b.stage="dead";
@@ -2458,12 +2730,60 @@ ACTIONS.push({id:"killhsr",nm:"Wind Down High-Speed Rail",cat:"Political",slots:
     else{spendPC(g,5);dAct(g,"trades",-15);
       cov(g,"Politico","The Legislature declines to kill the train",
         "The votes were never there — the Valley members whose districts finally have the jobs, the Trades' whip operation, and a Speaker from Hollister, which the line runs through. You spent capital learning what the last three governors knew: the train survives because killing it costs more than feeding it.");}}});
-/* small extra action referenced by the HSR scripted beat */
-ACTIONS.push({id:"hsrpush",nm:"Court HSR Private Investors",cat:"Political",slots:1,pc:3,
-  when:g=>(!g.flags.hsrKilled&&!g.flags.hsrPushed&&g.turn<8)?true:"Window closed (investor decision is Aug 2027)",
-  run:(g,c)=>{g.flags.hsrPushed=true;dAct(g,"trades",5);
-    cov(g,"CalMatters","The governor personally works the HSR term sheet",
-      "Calls to pension funds, a quiet dinner with a sovereign-fund delegation, and the cap-and-invest revenue stream — $1B a year through 2045 — offered as collateral with the governor's own credibility attached. The Authority's August deadline now has a thumb on its scale.");}});
+/* The HSR project: every stage is a thing YOU do, or it does not happen. */
+ACTIONS.push({id:"hsrpush",nm:"Advance High-Speed Rail",cat:"Political",slots:1,pc:3,
+  when:g=>{if(g.flags.hsrKilled)return "You wound the project down";
+    if(g.issues.hsrStage>=3)return "Merced–Bakersfield is funded — the project is advancing without you";
+    if(g.issues.hsrStage===1){const m=turnDate(g.turn).m;if(m<5||m>8)return "Locking the collateral is budget-season work (May–Aug)";}
+    return true;},
+  choices:g=>{const st=g.issues.hsrStage;
+    if(st===0)return [{id:"court",nm:"Court private capital — personally",
+      d:"Calls to pension funds, dinner with a sovereign fund, the cap-and-invest stream ($1B/yr through 2045) offered as collateral with your credibility attached. COA-based; odds improve with every serious attempt.",
+      cost:g.flags.hsrTried?g.flags.hsrTried+" prior attempt(s) — the investors know you're serious":"First approach"}];
+    if(st===1)return [{id:"lock",nm:"Lock the cap-and-invest collateral (budget season)",
+      d:"Write the pledge into the budget package so no future Legislature can quietly redirect the stream. CalChamber will call it a generation of climate money spent on one train. It will pass anyway if your standing holds.",cost:"PC 4 total · chamber −4"}];
+    return [{id:"fund",nm:"Fund the Merced–Bakersfield operating segment",
+      d:"The last mile is money: rolling stock, electrification completion, an operating subsidy. +$0.5B/yr to the deficit, +10 with the Trades, and a train Californians can actually board. This is the promise, kept — by choosing to pay for it.",cost:"PC 8 total · deficit +$0.5B/yr"}];},
+  run:(g,c)=>{
+    if(c==="court"){g.flags.hsrTried++;
+      const r=roll(g,"COA",0.28-g.flags.hsrTried*0.06,(g.actors.trades)/300+(g.player.attrs.FED-5)*0.015);
+      if(r.ok){hsrSetStage(g,1);dAct(g,"trades",10);
+        cov(g,"AP","High-speed rail lands its private capital — because the governor went and got it",
+          "A consortium — pension funds, a sovereign fund nobody wants to name, and the cap-and-invest revenue stream as collateral — closed the Merced–Bakersfield financing after "+g.flags.hsrTried+" round"+(g.flags.hsrTried>1?"s":"")+" of personal courtship from the horseshoe. Term sheets do not sign themselves; this one has your fingerprints on every page. Next: the collateral is a promise until it's locked in a budget.");}
+      else cov(g,"CalMatters","The investors say 'not yet'",
+        "Polite, specific, and unsigned: the consortium wants more certainty on the collateral and fewer headlines about the L.A. segment. The door stays open — each serious approach moves the odds — but nobody writes a nine-figure check to a governor who came once. ADVANCE HIGH-SPEED RAIL remains on the desk.");}
+    else if(c==="lock"){spendPC(g,1);dAct(g,"chamber",-4);hsrSetStage(g,2);
+      cov(g,"CalMatters","The cap-and-invest pledge is locked — $1B a year, untouchable",
+        "Written into the budget package as a continuous appropriation: the 2045 revenue stream now belongs to the train in a way no quiet trailer bill can undo. The Chamber's statement calls it 'a generation of climate revenue spent on one corridor.' The Authority's statement is shorter: 'bankable.'");}
+    else{spendPC(g,5);g.fiscal.deficit=clamp(g.fiscal.deficit+0.5,-18,99);dAct(g,"trades",10);dAct(g,"chamber",-4);
+      hsrSetStage(g,3);
+      cov(g,"AP","Merced–Bakersfield is funded. California is building a railroad.",
+        "Rolling stock ordered, electrification funded, an operating subsidy in statute. Seventeen years of renderings end with a governor choosing — across three separate decisions in two years, each of which could have quietly not happened — to pay for a train. The Trades' statement is one word and a hard-hat emoji. First revenue service is scheduled inside the decade, which in HSR years is tomorrow.");}}});
+
+/* BAL-2 companion: homelessness needs a program you fund, not just orders you sign */
+ACTIONS.push({id:"surge",nm:"Homelessness Surge Program",cat:"Political",slots:2,pc:6,
+  when:g=>g.flags.surgeY!==turnDate(g.turn).y?true:"One surge appropriation per year",
+  run:(g,c)=>{g.flags.surgeY=turnDate(g.turn).y;
+    g.fiscal.deficit=clamp(g.fiscal.deficit+1.2,-18,99);
+    queue(g,2,{k:"issue",key:"homelessBoost",d:6},"Homelessness surge program standing up","you");
+    dAct(g,"mayors",6);dAct(g,"localgov",4);dAct(g,"mods",-4);
+    cov(g,"CalMatters","A $1.2B/yr homelessness surge — money, with strings and a scoreboard",
+      "Encampment resolution teams, board-and-care rate bumps, Homekey acquisitions, and — the part the mayors actually noticed — the money is real and multi-year. The moderates' caucus noted the deficit. The count, if this is renewed annually and paired with housing production, bends in a way press releases never bent it. The promise math finally has an appropriation behind it.");}});
+
+/* MISS-1: the U.S. Senate vacancy — the enormous national event */
+ACTIONS.push({id:"fillsenate",nm:"Fill the U.S. Senate Vacancy",cat:"Constitutional",slots:2,pc:5,
+  when:g=>g.flags.senVacancy&&!g.flags.senFilled?true:(g.flags.senFilled?"Done — your Senator is seated":"No vacancy (mercifully)"),
+  choices:g=>[
+    {id:"elder",nm:"A caretaker elder statesman",d:"Seventy-four, revered, and sworn not to run in the special. Nobody's ambitions are threatened, which is why everybody can live with it.",cost:"Safe: party +8, approval +1"},
+    {id:"star",nm:"A rising star from your coalition",d:"Forty-one, viral, and instantly a national figure who owes you everything — for now. The base is electric; the passed-over generation of statewide officials is not.",cost:"Base +12, moderates −4, approval +2"},
+    {id:"crossover",nm:"A crossover moderate",d:"The other coalition's favorite member of yours. National press swoons; your base files a grievance.",cost:"Moderates +10, base −8, approval +1.5"}],
+  run:(g,c)=>{g.flags.senFilled=true;
+    const P=g.player.party;
+    if(c==="elder"){dAp(g,1);dAct(g,P==="R"?"gop":"progs",8);dAct(g,"deleg",6);}
+    else if(c==="star"){dAp(g,2);dAct(g,P==="R"?"gop":"progs",12);dAct(g,"mods",-4);g.flags.ltgovHostile=false;}
+    else{dAp(g,1.5);dAct(g,"mods",10);dAct(g,P==="R"?"gop":"progs",-8);}
+    cov(g,"AP","GOVERNOR NAMES A UNITED STATES SENATOR",
+      "The single most consequential unilateral power the office holds, exercised: one signature, and the United States Senate has a new member from California — no election, no confirmation, no legislature, no commission. For seventy-two hours every national outlet led with your name and every ambitious politician in the state recalculated their next decade. The appointment will outlast your governorship, your budget, and possibly your party's next three platforms. There is no other moment in this job like it, which is why governors privately dread and openly relish it in exactly equal measure.");}});
 
 /* ===================== 24. UI ===================== */
 const UI={screen:"creation",modal:null,open:{memo:true},apiKey:"",debug:false,tab:"overview",expandedFeed:{},
@@ -2480,12 +2800,14 @@ function pointsUsed(bg,attrs){let s=0;for(const k of Object.keys(ATTR_NAMES))s+=
 function loweredCount(bg,attrs){return Object.keys(ATTR_NAMES).filter(k=>attrs[k]<bg.attrs[k]).length;}
 
 /* ---------- A1/A2/R3: sparklines with tooltips, era shading, attribution ticks ---------- */
+/* Registry is monotonic (never reset): modal HTML built before a re-render keeps valid spark ids. */
 let SPARK_REG={},SPARK_N=0;
 function spark(arr,w=70,h=20,color="var(--blue)",opts){
   opts=opts||{};
   if(!arr||arr.length<2)return `<svg width="${w}" height="${h}"></svg>`;
   const a=arr; // A2: full term, no cap
   const id="sp"+(SPARK_N++);
+  if(SPARK_N%800===0)SPARK_REG={}; // bounded: stale ids just lose their tooltip
   SPARK_REG[id]={arr:a,w,fmt:opts.fmt||(v=>typeof v==="number"?(Math.abs(v)>1000?Math.round(v).toLocaleString():(Math.round(v*10)/10)):v)};
   const min=Math.min(...a),max=Math.max(...a),rng=(max-min)||1;
   const X=i=>(i/(a.length-1)*w), Y=v=>(h-2-(v-min)/rng*(h-4));
@@ -2498,14 +2820,59 @@ function spark(arr,w=70,h=20,color="var(--blue)",opts){
     const x=X(clamp(mk.t-1,0,a.length-1));
     ticks+=`<path d="M${x.toFixed(1)} ${h} l-3 5 l6 0 z" fill="var(--yellow)"><title>${esc(mk.label)} — ${turnDate(mk.t).label} (yours)</title></path>`;}
   const pts=a.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
-  return `<svg width="${w}" height="${h+(opts.markers&&opts.markers.length?6:0)}" data-spark="${id}" style="overflow:visible">${rects}<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/>${ticks}</svg>`;
+  const area=opts.fill?`<polygon points="0,${h} ${pts} ${w.toFixed?w.toFixed(1):w},${h}" fill="${color}" opacity="0.12"/>`:"";
+  return `<svg width="${w}" height="${h+(opts.markers&&opts.markers.length?6:0)}" data-spark="${id}" style="overflow:visible">${rects}${area}<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/>${ticks}</svg>`;
+}
+/* A24: the full chart — axes, gridlines, reference lines, era shading, markers, end dot */
+function chartBig(arr,opts){
+  opts=opts||{};
+  const w=opts.w||660,h=opts.h||190,padL=54,padR=46,padT=10,padB=20;
+  if(!arr||arr.length<2)return `<div class="subtle">Not enough history yet — come back in a few months.</div>`;
+  const fmt=opts.fmt||(v=>Math.abs(v)>=1000?Math.round(v).toLocaleString():(Math.round(v*10)/10));
+  const id="sp"+(SPARK_N++);
+  SPARK_REG[id]={arr,w:w-padL-padR,fmt,offX:padL};
+  let lo=Math.min(...arr),hi=Math.max(...arr);
+  if(opts.refs)for(const r of opts.refs){lo=Math.min(lo,r.v);hi=Math.max(hi,r.v);}
+  const range=(hi-lo)||1;lo-=range*0.07;hi+=range*0.07;
+  const X=i=>padL+(i/(arr.length-1))*(w-padL-padR);
+  const Y=v=>padT+(1-(v-lo)/(hi-lo))*(h-padT-padB);
+  let out=`<svg width="100%" viewBox="0 0 ${w} ${h}" data-spark="${id}" class="bigchart" preserveAspectRatio="none" style="overflow:visible">`;
+  // era shading
+  if(opts.eras)for(const e of opts.eras){
+    const x1=X(clamp(e.start-1,0,arr.length-1)),x2=X(clamp((e.end||arr.length)-1,0,arr.length-1));
+    out+=`<rect x="${x1}" y="${padT}" width="${Math.max(x2-x1,3)}" height="${h-padT-padB}" fill="rgba(230,103,103,0.10)"/>`;}
+  // gridlines + y labels (min / mid / max)
+  for(const v of [lo+range*0.07,(lo+hi)/2,hi-range*0.07]){
+    out+=`<line x1="${padL}" y1="${Y(v)}" x2="${w-padR}" y2="${Y(v)}" stroke="var(--grid)" stroke-width="1"/>`+
+         `<text x="${padL-6}" y="${Y(v)+3}" text-anchor="end" class="axlab">${fmt(v)}</text>`;}
+  // x ticks at Januaries
+  for(let i=0;i<arr.length;i++){if(i%12===0){
+    out+=`<line x1="${X(i)}" y1="${h-padB}" x2="${X(i)}" y2="${h-padB+4}" stroke="var(--baseline)"/>`+
+         `<text x="${X(i)}" y="${h-4}" text-anchor="middle" class="axlab">${2027+Math.floor(i/12)}</text>`;}}
+  // reference lines (targets, caps, inheritances)
+  if(opts.refs)for(const r of opts.refs){
+    out+=`<line x1="${padL}" y1="${Y(r.v)}" x2="${w-padR}" y2="${Y(r.v)}" stroke="${r.color||"var(--yellow)"}" stroke-dasharray="5 4" stroke-width="1.4"/>`+
+         `<text x="${w-padR+4}" y="${Y(r.v)+3}" class="axlab" fill="${r.color||"var(--yellow)"}">${esc(r.label)}</text>`;}
+  // area + line
+  const pts=arr.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+  out+=`<polygon points="${padL},${h-padB} ${pts} ${X(arr.length-1)},${h-padB}" fill="${opts.color||"var(--blue)"}" opacity="0.10"/>`;
+  out+=`<polyline points="${pts}" fill="none" stroke="${opts.color||"var(--blue)"}" stroke-width="2.4" stroke-linejoin="round"/>`;
+  // attribution markers
+  if(opts.markers)for(const mk of opts.markers){const x=X(clamp(mk.t-1,0,arr.length-1));
+    out+=`<path d="M${x} ${h-padB} l-4 7 l8 0 z" fill="var(--yellow)"><title>${esc(mk.label)} — ${turnDate(mk.t).label} (yours)</title></path>`;}
+  // end dot + label
+  const lastX=X(arr.length-1),lastY=Y(arr[arr.length-1]);
+  out+=`<circle cx="${lastX}" cy="${lastY}" r="4" fill="${opts.color||"var(--blue)"}" stroke="var(--surface)" stroke-width="2"/>`+
+       `<text x="${Math.min(lastX+7,w-4)}" y="${lastY-7}" class="axlab endlab">${fmt(arr[arr.length-1])}</text>`;
+  out+="</svg>";
+  return out;
 }
 function prov(key,txt){const b=BASELINE[key];return `<span class="prov" title="${esc(b.src)} [${b.tag}]">${txt}</span> <span class="tag ${b.tag}">${b.tag.slice(0,4)}</span>`;}
 /* A8: procedural monogram seals */
 function seal(initials,hueSeed){let h=0;for(const ch of hueSeed)h=(h*31+ch.charCodeAt(0))%360;
   return `<svg width="16" height="16" viewBox="0 0 16 16" style="vertical-align:-3px;margin-right:4px"><circle cx="8" cy="8" r="7.4" fill="hsl(${h},32%,26%)" stroke="hsl(${h},40%,52%)" stroke-width="1"/><text x="8" y="11" text-anchor="middle" font-size="7" font-family="var(--mono)" fill="#fff">${esc(initials)}</text></svg>`;}
 function sealFor(hl){
-  const map=[["Attorney General","RB"],["Insurance Commissioner","RL"],["Controller","MC"],["Lieutenant Governor","LG"],["Superintendent","TT"],["Treasurer","FM"],["Lara","RL"]];
+  const map=[["Attorney General",OFFICERS.ag.ini],["Insurance Commissioner",OFFICERS.ins.ini],["Commissioner",OFFICERS.ins.ini],["Controller",OFFICERS.controller.ini],["Lieutenant Governor",OFFICERS.ltgov.ini],["Superintendent",OFFICERS.spi.ini],["Treasurer",OFFICERS.treasurer.ini]];
   for(const[k,ini]of map)if(hl.includes(k))return seal(ini,k);
   return "";}
 
@@ -2513,7 +2880,6 @@ function sealFor(hl){
 function render(){
   const app=document.getElementById("app");
   try{
-    SPARK_REG={};SPARK_N=0;
     if(UI.screen==="creation")app.innerHTML=renderCreation();
     else if(G&&G.phase==="report")app.innerHTML=renderReport();
     else app.innerHTML=renderPlay();
@@ -2638,8 +3004,8 @@ function renderPlay(){
   const apDelta=g.hist.approval.length>=2?g.approval-g.hist.approval[g.hist.approval.length-2]:0;
   const tab=UI.tab||"overview";
   let content="";
-  if(tab==="overview")content=`<div class="ov-col">${tipsBanner(g)}${statTiles(g,apDelta)}${cardPanel(g)}${setpiece(g,d)}${memoPanel(g)}${agendaPanel(g)}${promiseStrip(g)}${headlinesPanel(g)}</div>`;
-  else if(tab==="state")content=`<div class="two-col">${fiscalPanel(g)}${issuesPanel(g)}</div>`;
+  if(tab==="overview")content=`<div class="ov-col">${tipsBanner(g)}${statTiles(g,apDelta)}${budgetDesk(g)}${transitionPanel(g)}${cardPanel(g)}${setpiece(g,d)}${hsrTracker(g)}${memoPanel(g)}${agendaPanel(g)}${promiseStrip(g)}${headlinesPanel(g)}</div>`;
+  else if(tab==="state")content=`<div class="ov-col" style="max-width:1200px">${chartExplorer(g)}<div class="two-col">${fiscalPanel(g)}${issuesPanel(g)}</div></div>`;
   else if(tab==="politics")content=`<div class="two-col">${politicalPanel(g)}${promisesPanel(g)}</div>`;
   else content=`<div class="news-col">${masthead(g)}${feedPanel(g)}</div>`;
   return `${topbar(g,d,nd,apDelta)}${tabbar(g,tab)}${content}${actionBar(g)}`;
@@ -2660,10 +3026,12 @@ function statTiles(g,apDelta){
   const M=g.market;
   const tile=(lab,val,delta,sp,cls)=>`<div class="tile ${cls||""}"><div class="tlab">${lab}</div><div class="tval num">${val}</div><div class="tdelta">${delta}</div>${sp||""}</div>`;
   return `<div class="tiles">
-    ${tile("APPROVAL",g.approval.toFixed(0)+"%",`<span class="${apDelta>=0?"delta-up":"delta-dn"}">${apDelta>=0?"▲":"▼"}${Math.abs(apDelta).toFixed(1)} this month</span>`,spark(g.hist.approval,150,24,"var(--blue)"))}
-    ${tile("STRUCTURAL DEFICIT",fmtB(g.fiscal.deficit,1),`<span class="subtle">/yr · inherited $35B</span>`,spark(g.hist.deficit,150,24,"var(--red)",{eras:M.eras,fmt:v=>fmtB(v,1)}),"crit")}
-    ${tile("MARKET (AI SURGE)",M.idx.toFixed(0),`<span class="${M.mode==="exuberant"?"delta-up":M.mode==="recovery"?"subtle":"delta-dn"}">${M.mode}</span>`,spark(M.hist,150,24,M.mode==="exuberant"?"var(--aqua)":"var(--red)",{eras:M.eras}))}
-    ${tile("POLITICAL CAPITAL",g.pc,`<span class="subtle">honeymoon ${g.honeymoon>0?g.honeymoon+" mo left":"over"}</span>`,spark(g.hist.pc,150,24,"var(--violet)"))}
+    ${tile("APPROVAL",g.approval.toFixed(0)+"%",`<span class="${apDelta>=0?"delta-up":"delta-dn"}">${apDelta>=0?"▲":"▼"}${Math.abs(apDelta).toFixed(1)} this month</span>`,spark(g.hist.approval,150,26,"var(--blue)",{fill:1}),"acc-blue")}
+    ${g.fiscal.deficit<0
+      ?tile("OPERATING SURPLUS",fmtB(Math.abs(g.fiscal.deficit),1),`<span class="delta-up">/yr · inherited a $${g.inheritedDeficit}B deficit</span>`,spark(g.hist.deficit,150,26,"var(--good)",{eras:M.eras,fill:1,fmt:v=>fmtB(v,1)}),"acc-aqua")
+      :tile("STRUCTURAL DEFICIT",fmtB(g.fiscal.deficit,1),`<span class="subtle">/yr · inherited $${g.inheritedDeficit}B</span>`,spark(g.hist.deficit,150,26,"var(--red)",{eras:M.eras,fill:1,fmt:v=>fmtB(v,1)}),"crit acc-red")}
+    ${tile("MARKET (AI SURGE)",M.idx.toFixed(0),`<span class="${M.mode==="exuberant"?"delta-up":M.mode==="recovery"?"subtle":"delta-dn"}">${M.mode}</span>`,spark(M.hist,150,26,M.mode==="exuberant"?"var(--aqua)":"var(--red)",{eras:M.eras,fill:1}),M.mode==="exuberant"?"acc-aqua":"acc-red")}
+    ${tile("POLITICAL CAPITAL",g.pc,`<span class="subtle">honeymoon ${g.honeymoon>0?g.honeymoon+" mo left":"over"}</span>`,spark(g.hist.pc,150,26,"var(--violet)",{fill:1}),"acc-violet")}
   </div>`;
 }
 /* Overview: inbox + In Motion, merged & compact */
@@ -2687,9 +3055,9 @@ function headlinesPanel(g){
   const items=g.feed.slice(0,5);
   if(!items.length)return "";
   return `<div class="panel"><h3>Latest <span class="subtle"><button class="ghost" data-act="settab" data-v="news" style="font-size:10px;padding:1px 8px">full Newsroom →</button></span></h3>
-  ${items.map((f,i)=>{const fid="h"+f.t+"_"+i;const open=UI.expandedFeed[fid];
+  ${items.map((f,i)=>{const fid="h"+f.t+"_"+f.hl.slice(0,18).replace(/[^a-z0-9]/gi,"");const open=UI.expandedFeed[fid];
     return `<div class="hline ${open?"open":""}">
-      <div class="fhead" data-act="togglefeed" data-fid="${fid}"><span class="chip src-c-${f.src}">${f.src==="WALL"?"WALL":f.src==="SYSTEM"?"BRIEF":f.src}</span><span class="fhl">${f.hl}</span><span class="fcaret">${open?"▾":"▸"}</span></div>
+      <div class="fhead" data-act="togglefeed" data-fid="${fid}"><span class="chip chipc-${f.src}">${f.src==="WALL"?"WALL":f.src==="SYSTEM"?"BRIEF":f.src}</span><span class="fhl">${f.hl}</span><span class="fcaret">${open?"▾":"▸"}</span></div>
       ${open?`<div class="bd" style="padding:6px 2px 2px">${f.bd}${f.mn?`<div class="modelnote">${f.mn}</div>`:""}</div>`:""}</div>`;}).join("")}</div>`;
 }
 function masthead(g){
@@ -2716,7 +3084,7 @@ function fiscalPanel(g){
   const f=g.fiscal;
   const leak=f.deficit>1?`Every projected new revenue dollar: ~40¢ auto-committed (Prop 98/Prop 2)${f.maintFactor>0.5?", plus maintenance-factor repayment ahead of you in line":""}. Closing a ${fmtB(Math.min(f.deficit,30),0)} gap needs ~${fmtB(Math.min(f.deficit,30)*2,0)} of surprise revenue.`:"Gap nominally closed — watch the out-year drift.";
   return `<div class="panel"><h3>Fiscal <span class="subtle">2027-28 problem ↓</span></h3>
-    <div style="text-align:center;margin:2px 0 6px"><div class="bignum ${flashCls("def",f.deficit)}">${fmtB(f.deficit,1)}</div><div class="subtle">projected annual structural deficit ${prov("structural_deficit","")}</div></div>
+    <div style="text-align:center;margin:2px 0 6px"><div class="bignum ${flashCls("def",f.deficit)}" style="${f.deficit<0?"color:var(--good);text-shadow:0 0 20px rgba(12,163,12,.3)":""}">${f.deficit<0?fmtB(Math.abs(f.deficit),1):fmtB(f.deficit,1)}</div><div class="subtle">${f.deficit<0?"projected annual operating SURPLUS (drift resumes in January)":"projected annual structural deficit"} ${prov("structural_deficit","")}</div></div>
     <div class="kv"><span class="k">General Fund</span><span class="v">${prov("general_fund",fmtB(f.gf,0))}</span></div>
     <div class="kv"><span class="k">All state funds</span><span class="v">${prov("total_budget","~$352B")}</span></div>
     <div class="kv"><span class="k">Federal via treasury</span><span class="v">${prov("federal_funds","~$175B (~35%)")}</span></div>
@@ -2777,7 +3145,8 @@ function politicalPanel(g){
     ${g.flags.recallPressure>0?`<div class="kv"><span class="k">Recall pressure</span><span class="v bad">${g.flags.recallPressure}/100</span></div>`:""}
     ${g.flags.jobKiller?`<div class="subtle" style="color:var(--serious)">⚠ CalChamber "job killer" campaign active (−2 approval drift)</div>`:""}
     ${camps.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">⚔ CAMPAIGNS RUNNING AGAINST YOU</div>${camps.map(([id,c])=>`<div class="kv"><span class="k" style="color:var(--serious)">${ACTORS.find(a=>a.id===id).nm}</span><span class="v" style="font-size:10px;white-space:normal">${c.nm} · since ${turnDate(c.since).label}</span></div>`).join("")}`:""}
-    ${g.cabinet.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">CABINET (quality moves every operational roll)</div>${g.cabinet.map(c=>`<div class="kv"><span class="k">${seal(c.agency.slice(0,2),c.agency)}${c.nm} · ${c.agency}</span><span class="v" style="color:var(--yellow)">${"★".repeat(c.q)}</span></div>`).join("")}`:""}
+    ${g.cabinet.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">CABINET (quality moves every operational roll · vacancies count as acting deputies)</div>${g.cabinet.map(c=>`<div class="kv"><span class="k">${seal(c.agency.slice(0,2),c.agency)}${c.nm} · ${c.agency}${c.pending?' <span class="pill" style="color:var(--warn);border-color:var(--warn);font-size:8px">RULES</span>':c.type==="caretaker"?' <span class="pill" style="color:var(--serious);border-color:var(--serious);font-size:8px">CARETAKER</span>':""}</span><span class="v" style="color:var(--yellow)">${"★".repeat(c.q)}</span></div>`).join("")}
+    ${cabinetVacancies(g).length?`<div class="kv"><span class="k" style="color:var(--serious)">VACANT: ${cabinetVacancies(g).map(v=>v[0]).join(", ")}</span><span class="v" style="color:var(--serious)">★½ acting</span></div>`:""}`:""}
     <div class="hr"></div>
     <details class="acc" data-key="groups" ${UI.open.groups?"open":""}><summary>Approval by group (${g.approval.toFixed(0)}% overall)</summary>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">${Object.entries(groups).map(([k,vv])=>`<div class="kv"><span class="k" style="font-size:11px">${k}</span><span class="v" style="font-size:11px">${vv}%</span></div>`).join("")}</div></details>
@@ -2815,6 +3184,9 @@ function inMotionPanel(g){
 function buildMemo(g){
   const d=turnDate(g.turn),out=[];
   if(d.m===1&&!g.fiscal.budget.proposed)out.push("The constitutional budget deadline is Jan 10 — THIS MONTH. PROPOSE JANUARY BUDGET costs all 3 slots. Nothing else on this list matters if you miss it.");
+  if(g.transitionOpen&&cabinetVacancies(g).length)out.push(`${cabinetVacancies(g).length} cabinet posts unfilled (transition set-piece above — free, no slots). Every operational roll runs through acting deputies until you staff them; caretakers get auto-named after March.`);
+  const caretakers=g.cabinet.filter(c=>c.type==="caretaker").length;
+  if(!g.transitionOpen&&(cabinetVacancies(g).length||caretakers))out.push(`${cabinetVacancies(g).length?cabinetVacancies(g).length+" vacant cabinet post(s)":""}${cabinetVacancies(g).length&&caretakers?" and ":""}${caretakers?caretakers+" caretaker post(s)":""} dragging your operational rolls — FILL A CABINET VACANCY.`);
   if(d.m===5&&g.fiscal.budget.proposed&&!g.fiscal.budget.revised)out.push("May Revision window. Face the revenue reality in public or roll the dice on holding January's numbers.");
   if(g.bills.desk.length)out.push(`${g.bills.desk.length} bills on the desk. Sign or veto by Sept 30 — unsigned bills become law WITHOUT your signature, and everyone knows what that means.`);
   if(g.flags.disasterActive&&!g.flags.disasterActive.handled)out.push("Active disaster, no declaration. Every hour without a command presence is a clip. DECLARE EMERGENCY.");
@@ -2832,6 +3204,71 @@ function memoPanel(g){
   return `<details class="panel memo" data-key="memo" ${UI.open.memo!==false?"open":""}><summary style="cursor:pointer;font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--yellow)">☰ The Morning Memo — from your Chief of Staff</summary>
   ${memo.map(m=>`<div class="memo-line">▸ ${m}</div>`).join("")}</details>`;
 }
+/* A24: the chart explorer — pick a series, get a real chart with targets drawn on it */
+function chartExplorer(g){
+  const sel=UI.chartSel||"deficit";
+  const P=g.player.promises;
+  const CHARTS={
+    deficit:{nm:"Deficit / Surplus",arr:g.hist.deficit,color:g.fiscal.deficit<0?"var(--good)":"var(--red)",fmt:v=>fmtB(v,1),
+      refs:[{v:g.inheritedDeficit,label:"inherited",color:"var(--muted)"},{v:0,label:"balance",color:"var(--aqua)"}],eras:g.market.eras},
+    approval:{nm:"Approval",arr:g.hist.approval,color:"var(--blue)",fmt:v=>Math.round(v)+"%",
+      refs:[{v:25,label:"recall zone",color:"var(--critical)"},{v:50,label:"50%",color:"var(--muted)"}],eras:g.market.eras},
+    market:{nm:"Market (AI surge)",arr:g.market.hist,color:"var(--aqua)",fmt:v=>Math.round(v),
+      refs:[{v:100,label:"Jan 2027",color:"var(--muted)"}],eras:g.market.eras},
+    homeless:{nm:"Homelessness",arr:g.hist.homeless,color:"var(--blue)",fmt:v=>Math.round(v/1000)+"k",
+      refs:P.includes("homeless_third")?[{v:121300,label:"YOUR PROMISE",color:"var(--yellow)"}]:[{v:181934,label:"Jan 2027",color:"var(--muted)"}],markers:g.markers.homeless},
+    medical:{nm:"Medi-Cal enrollment",arr:g.hist.medical,color:"var(--violet)",fmt:v=>v.toFixed(1)+"M",
+      refs:P.includes("protect_medical")?[{v:13.5,label:"YOUR PROMISE",color:"var(--yellow)"},{v:12.5,label:"H.R.1 path",color:"var(--critical)"}]:[{v:12.5,label:"H.R.1 path",color:"var(--critical)"}],markers:g.markers.medical},
+    insur:{nm:"Insurance stability",arr:g.hist.insur,color:"var(--aqua)",fmt:v=>Math.round(v),
+      refs:P.includes("fix_insurance")?[{v:70,label:"YOUR PROMISE (Dec '27)",color:"var(--yellow)"}]:[],markers:g.markers.insur},
+    pc:{nm:"Political Capital",arr:g.hist.pc,color:"var(--violet)",fmt:v=>Math.round(v),refs:[]},
+  };
+  const c=CHARTS[sel]||CHARTS.deficit;
+  return `<div class="panel chartpanel"><h3>Charts <span class="subtle">hover for month · ▴ = your action landing · dashed = targets & caps</span></h3>
+  <div class="fchips" style="margin-bottom:10px">${Object.entries(CHARTS).map(([k,v])=>`<button class="fchip ${sel===k?"on":""}" data-act="chartsel" data-v="${k}">${v.nm}</button>`).join("")}</div>
+  ${chartBig(c.arr,{color:c.color,fmt:c.fmt,refs:c.refs,eras:c.eras,markers:c.markers,w:1100,h:230})}</div>`;
+}
+/* REAL-3: the budget bill on your desk — sign it or send it back */
+function budgetDesk(g){
+  const A=g.fiscal.budget.awaiting;
+  if(!A)return "";
+  return `<div class="setpiece" style="border-color:var(--critical)"><h3 style="color:var(--critical)">✒ THE BUDGET IS ON YOUR DESK — sign or veto</h3>
+  <p style="font-size:12.5px;margin:4px 0">Passed ${A.votes.asm}–${79-A.votes.asm} / ${A.votes.sen}–${40-A.votes.sen}. Addresses ~<b class="num">${fmtB(A.finalSolve,1)}</b> of the structural problem.</p>
+  ${A.changes.length?`<div class="subtle" style="margin-bottom:6px">CONFERENCE CHANGES YOU DIDN'T ASK FOR:</div>${A.changes.map(c=>`<div class="memo-line" style="color:var(--warn)">▸ ${c}</div>`).join("")}`:'<div class="subtle">The conference committee sent your framework back largely intact — a courtesy that will be invoiced later.</div>'}
+  <div style="margin-top:9px">
+    <button class="primary" data-act="signbudget">Sign it — take the deal</button>
+    <button class="danger" data-act="vetobudget">VETO — send it back (late++, PC −6, leadership −8)</button></div>
+  <div class="subtle" style="font-size:10px;margin-top:5px">End the month without deciding and it signs itself, reluctantly, at the deadline — the press knows what a signature without a ceremony means.</div></div>`;
+}
+/* The HSR project tracker — a promise you can watch yourself earn (or not) */
+function hsrTracker(g){
+  if(!g.player.promises.includes("finish_hsr")||g.flags.hsrKilled)return "";
+  const st=g.issues.hsrStage;
+  const steps=["Court private capital","Lock cap-and-invest collateral","Fund Merced–Bakersfield"];
+  return `<div class="panel"><h3>🚄 High-Speed Rail — the promise, in stages <span class="subtle">${st}/3</span></h3>
+  <div class="hsr-steps">${steps.map((t,i)=>`<div class="hsr-step ${st>i?"done":st===i?"cur":""}"><span class="hsr-dot">${st>i?"✓":i+1}</span>${t}</div>`).join('<div class="hsr-line"></div>')}</div>
+  <div class="subtle" style="font-size:11px;margin-top:5px">${st>=3?"Kept. The train is being built because you made three separate decisions to build it.":"Current status: "+esc(g.issues.hsr)+" — ADVANCE HIGH-SPEED RAIL is the action. Nothing here happens by itself."}</div></div>`;
+}
+/* The transition set-piece: staff the administration, name by name (turns 1–3) */
+function transitionPanel(g){
+  if(!g.transitionOpen)return "";
+  const vac=cabinetVacancies(g);
+  const pending=g.cabinet.filter(c=>c.pending);
+  const filled=g.cabinet.filter(c=>!c.pending);
+  if(!vac.length&&!pending.length)return "";
+  const monthsLeft=Math.max(0,3-g.turn+1);
+  return `<div class="setpiece"><h3>🏛 THE TRANSITION — staff the administration (${filled.length}/9 seated${pending.length?", "+pending.length+" before Senate Rules":""})</h3>
+  <p class="subtle">Every governor's first real act: naming the people who actually run the 227,500-person executive branch. Free during the transition — no action slots. ${monthsLeft} month${monthsLeft===1?"":"s"} until unfilled posts get caretakers (★, and every operational roll feels it).</p>
+  ${vac.map(([code,full])=>{const i=AGENCIES.findIndex(a=>a[0]===code);
+    return `<div class="trow"><div class="trow-h">${seal(code.slice(0,2),code)}<b>${full}</b> <span class="subtle num">${code}</span></div>
+    <div class="trow-opts">
+      <button class="tcand" data-act="appointpick" data-ag="${code}" data-c="holdover" title="Kept from the last administration. Confirms instantly, knows the building, owes you nothing.">${candName(i,"holdover")} · holdover ★★</button>
+      <button class="tcand" data-act="appointpick" data-ag="${code}" data-c="ally" title="A termed-out legislator with friends in Rules. Confirms instantly; the Legislature banks the favor (+leg standing, committee chit).">${candName(i,"ally")} · caucus ally ★★</button>
+      <button class="tcand" data-act="appointpick" data-ag="${code}" data-c="reformer" title="Theory-of-change hire. Senate Rules gets ~2 months and, in practice, a veto — ★★★ if confirmed, a public collapse if not.">${candName(i,"reformer")} · reformer ★★★<span class="risk">RULES RISK</span></button>
+    </div></div>`;}).join("")}
+  ${pending.map(c=>`<div class="trow pendrow"><div class="trow-h">${seal(c.agency.slice(0,2),c.agency)}<b>${c.agencyFull}</b> — ${c.nm} <span class="pill" style="color:var(--warn);border-color:var(--warn)">AWAITING SENATE RULES</span></div></div>`).join("")}
+  </div>`;
+}
 /* F1: situation card */
 function cardPanel(g){
   if(!g.pendingCard)return "";
@@ -2840,8 +3277,8 @@ function cardPanel(g){
   return `<div class="setpiece scard-panel"><h3>⚡ ON YOUR DESK — ${esc(card.t)}</h3>
   <p style="margin:6px 0 8px;font-size:13px">${card.b(g)}</p>
   ${card.opts.map((o,i)=>`<button class="choice" data-act="cardopt" data-i="${i}" ${o.pc&&g.pc<o.pc?"disabled":""}>
-    <span class="cn">${o.l}</span><span class="cd">${o.d}</span>${o.pc?`<span class="cc">PC ${o.pc}</span>`:""}</button>`).join("")}
-  <div class="subtle" style="font-size:10.5px">Costs no action slot — but end the month without deciding and it decides itself, along the path of least resistance.</div></div>`;
+    <span class="cn"><span class="keyhint">${i+1}</span> ${o.l}</span><span class="cd">${o.d}</span>${o.pc?`<span class="cc">PC ${o.pc}</span>`:""}</button>`).join("")}
+  <div class="subtle" style="font-size:10.5px">Costs no action slot — but end the month without deciding and it decides itself, along the path of least resistance. Keys 1–${card.opts.length} work.</div></div>`;
 }
 /* F3: one-time concept tips (persisted in the save) */
 function tipsBanner(g){
@@ -2871,11 +3308,11 @@ function feedPanel(g){
   return chips+`<div>${items.map((f,i)=>feedItem(f,i,i===0)).join("")}</div>`;
 }
 function feedItem(f,i,leadOpen){
-  const fid="f"+f.t+"_"+(i||0)+"_"+f.hl.length;
+  const fid="f"+f.t+"_"+f.hl.slice(0,18).replace(/[^a-z0-9]/gi,"");
   const open=UI.expandedFeed[fid]!==undefined?UI.expandedFeed[fid]:!!leadOpen;
   return `<div class="feed-item src-${f.src} ${open?"":"collapsed"}">
     <div class="fhead" data-act="togglefeed" data-fid="${fid}" data-def="${leadOpen?1:0}">
-      <span class="chip">${sealFor(f.hl)}${f.src==="WALL"?"THE WALL":f.src==="SYSTEM"?"BRIEFING":f.src}</span>
+      <span class="chip chipc-${f.src}">${sealFor(f.hl)}${f.src==="WALL"?"THE WALL":f.src==="SYSTEM"?"BRIEFING":f.src}</span>
       <span class="hl">${f.hl}</span>
       <span class="fmeta">${turnDate(f.t).label} <span class="fcaret">${open?"▾":"▸"}</span></span></div>
     ${open?`<div class="bd">${f.bd}</div>${f.mn?`<div class="modelnote">${f.mn}</div>`:""}`:""}</div>`;
@@ -2999,7 +3436,7 @@ function abdicationModal(g,kind){
   <button class="primary" data-act="closemodal">…No. Take me back.</button></div></div>`;
 }
 /* A3/F7: month-end interstitial (December = Year in Review) */
-function interstitialModal(g,stories,endedTurn){
+function interstitialModal(g,stories,endedTurn,spanLabel){
   const d=turnDate(endedTurn);
   const isDec=d.m===12;
   let yr="";
@@ -3015,11 +3452,12 @@ function interstitialModal(g,stories,endedTurn){
     <div class="kv"><span class="k">In Motion for next year</span><span class="v">${g.lag.length} pending effects</span></div>`;
   }
   return `<div class="modal-back"><div class="modal">
-  <h2>${d.long.toUpperCase()} — ${stories.length} ${stories.length===1?"story":"stories"}</h2>
-  ${stories.slice(0,8).map(f=>`<div class="inter-hl"><span class="chip" style="font-family:var(--mono);font-size:9px">${f.src}</span> ${f.hl}</div>`).join("")}
-  ${stories.length>8?`<div class="subtle">…and ${stories.length-8} more in the feed</div>`:""}
+  <div class="inter-date">${spanLabel||d.long}</div>
+  <div class="inter-rule">${stories.length} ${stories.length===1?"STORY":"STORIES"} · TURN ${endedTurn} OF 48</div>
+  ${stories.slice(0,8).map(f=>`<div class="inter-hl"><span class="chip chipc-${f.src}">${f.src}</span> ${f.hl}</div>`).join("")}
+  ${stories.length>8?`<div class="subtle">…and ${stories.length-8} more in the Newsroom</div>`:""}
   ${yr}
-  <div style="margin-top:10px"><button class="primary" data-act="closemodal" autofocus>Continue → <span class="subtle">(Enter)</span></button></div></div></div>`;
+  <div style="margin-top:12px"><button class="primary" data-act="closemodal" autofocus>Continue → <span class="subtle">(Enter)</span></button></div></div></div>`;
 }
 function saveModal(g){
   return `<div class="modal-back" data-act="closemodal"><div class="modal">
@@ -3036,7 +3474,7 @@ function archiveModal(g){
   const hits=g.feed.filter(f=>!q||f.hl.toLowerCase().includes(q)||f.bd.toLowerCase().includes(q));
   return `<div class="modal-back" data-act="closemodal"><div class="modal modal-wide">
   <h2>The Archive — every story of the term</h2>
-  <input type="text" id="archSearch" placeholder="Search headlines and copy… (e.g. 'suspense', 'LAO', 'Lara')" value="${esc(UI.archQ)}" style="width:100%;margin-bottom:8px">
+  <input type="text" id="archSearch" placeholder="Search headlines and copy… (e.g. 'suspense', 'LAO', 'FAIR Plan')" value="${esc(UI.archQ)}" style="width:100%;margin-bottom:8px">
   <div id="archResults" style="max-height:55vh;overflow-y:auto">${hits.slice(0,60).map(f=>feedItem(f)).join("")||'<p class="subtle">Nothing matches.</p>'}</div>
   <button data-act="closemodal" style="margin-top:8px">Close</button></div></div>`;
 }
@@ -3051,7 +3489,7 @@ function renderReport(){
   <div class="mandate-box"><h3 style="margin-bottom:6px">1 · Promises: ${L.kept} of 3 kept ${L.kept>=2?"— the game considers this an achievement":L.kept===1?"— about par for the office":"— the office won"}</h3>
   ${L.promises.map(p=>`<div class="kv"><span class="k">${p.t}</span><span class="v" style="color:${p.state==="kept"?"var(--good)":"var(--critical)"}">${p.state.toUpperCase()}${g.promiseBrokenAt[p.id]?" ("+turnDate(g.promiseBrokenAt[p.id]).label+")":""}</span></div><div class="subtle">${p.detail}</div>`).join("")}</div>
   <div class="mandate-box"><h3 style="margin-bottom:6px">2 · What you leave your successor</h3>
-  <div style="text-align:center"><span class="bignum">${fmtB(L.deficit,1)}</span><div class="subtle">annual structural deficit at handoff (you inherited $35B)</div></div>
+  <div style="text-align:center"><span class="bignum" style="${L.deficit<0?"color:var(--good);text-shadow:none":""}">${L.deficit<0?fmtB(Math.abs(L.deficit),1)+" SURPLUS":fmtB(L.deficit,1)}</span><div class="subtle">at handoff (you inherited a $${g.inheritedDeficit}B deficit)</div></div>
   <p style="margin-top:6px;color:${L.deficitDelta<=0?"var(--good)":"var(--critical)"}">${L.deficitDelta<=0?"Better than you found it — by "+fmtB(Math.abs(L.deficitDelta),1)+"/yr. Few can say this.":"Worse than you found it, by "+fmtB(L.deficitDelta,1)+"/yr. The DOC's central metric, and it moved the wrong way."}</p></div>
   <div class="mandate-box"><h3 style="margin-bottom:6px">3 · Issue deltas vs. Jan 2027 baseline</h3>
   ${L.issues.map(i=>`<div class="kv"><span class="k">${i[0]}</span><span class="v" style="color:${i[2]>=0?"var(--good)":"var(--red)"}">${i[1]}</span></div>`).join("")}</div>
@@ -3148,7 +3586,8 @@ document.addEventListener("mousemove",e=>{
   const reg=SPARK_REG[svg.dataset.spark];if(!reg)return;
   if(!tip){tip=document.createElement("div");tip.id="sparktip";document.body.appendChild(tip);}
   const rect=svg.getBoundingClientRect();
-  const i=clamp(Math.round((e.clientX-rect.left)/rect.width*(reg.arr.length-1)),0,reg.arr.length-1);
+  const frac=reg.offX?((e.clientX-rect.left)/rect.width* (reg.offX+reg.w+46) - reg.offX)/reg.w : (e.clientX-rect.left)/rect.width;
+  const i=clamp(Math.round(frac*(reg.arr.length-1)),0,reg.arr.length-1);
   tip.textContent=turnDate(i+1).label+" · "+reg.fmt(reg.arr[i]);
   tip.style.display="block";
   tip.style.left=(e.clientX+12)+"px";tip.style.top=(e.clientY-26)+"px";
@@ -3163,6 +3602,9 @@ document.addEventListener("keydown",e=>{
     const btns=document.querySelectorAll(".modal .choice:not([disabled]), .modal .abtn:not([disabled])");
     const b=btns[+e.key-1];if(b)b.click();return;}
   if(UI.modal)return;
+  if(/^[1-9]$/.test(e.key)&&G.pendingCard){ // situation-card hotkeys
+    const btns=document.querySelectorAll('[data-act="cardopt"]:not([disabled])');
+    const b=btns[+e.key-1];if(b){b.click();return;}}
   if(e.key==="a"||e.key==="A"){const b=document.querySelector("[data-act='openactions']:not([disabled])");if(b)b.click();}
   if(e.key==="e"||e.key==="E"){const b=document.querySelector("[data-act='endmonth']");if(b)b.click();}
   if(e.key==="t"||e.key==="T"){const b=document.querySelector("[data-act='openwalls']");if(b)b.click();}
@@ -3205,7 +3647,14 @@ document.addEventListener("click",e=>{
         <p class="subtle" style="margin:8px 0">${esc(w.cat)} · DOC §6.3 hard gate. Filed to the Newsroom for the record.</p>
         <button class="primary" data-act="closemodal">Understood</button></div></div>`;
       render();break;}
-    case "settab":UI.tab=el.dataset.v;render();break;
+    case "settab":UI.tab=el.dataset.v;UI.ticker=null;render();break;
+    case "chartsel":UI.chartSel=el.dataset.v;render();break;
+    case "signbudget":{const pre=snapshotState();finishEnactment(G,false);G.rngCalls=RNG.calls;makeTicker(pre);render();break;}
+    case "vetobudget":{const pre=snapshotState();vetoBudget(G);G.rngCalls=RNG.calls;makeTicker(pre);render();break;}
+    case "appointpick":{const nm=transitionPick(G,el.dataset.ag,el.dataset.c);
+      G.rngCalls=RNG.calls;
+      if(nm)toast(el.dataset.c==="reformer"?nm+" nominated — Senate Rules gets ~2 months.":nm+" seated at "+el.dataset.ag+".");
+      render();break;}
     case "togglefeed":{const fid=el.dataset.fid;const def=el.dataset.def==="1";
       const cur=UI.expandedFeed[fid]!==undefined?UI.expandedFeed[fid]:def;
       UI.expandedFeed[fid]=!cur;render();break;}
@@ -3267,7 +3716,7 @@ document.addEventListener("click",e=>{
       G.rngCalls=RNG.calls;
       UI.modal=null;
       if(hops>0&&collected.length&&!G.over&&G.phase==="play")
-        UI.modal=interstitialModal(G,collected.slice(0,10),G.turn-1);
+        UI.modal=interstitialModal(G,collected.slice(0,10),G.turn-1,hops>1?`THE LAST ${hops} MONTHS — ${turnDate(startTurn).label} → ${turnDate(G.turn-1).label}`:null);
       render();break;}
     case "save":{UI.modal=saveModal(G);render();break;}
     case "copysave":{const area=document.getElementById("saveArea");
@@ -3294,7 +3743,6 @@ document.addEventListener("click",e=>{
 function execAction(a,choice,extra){
   const pre=snapshotState();
   spendSlots(G,a.slots);spendPC(G,a.pc);
-  if(G.flags.frameBonus)G.flags.frameBonus=false;
   a.run(G,choice,extra);
   G.rngCalls=RNG.calls;
   makeTicker(pre);
