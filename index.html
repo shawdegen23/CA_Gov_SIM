@@ -1332,7 +1332,9 @@ function newGame(cfg){
       debt:BASELINE.debt_service.v, gimmicks:3.9, newTaxes:0, taxSigned:false,
       budget:{proposed:false,mix:null,solved:0,grade:null,enacted:false,late:0}},
     market:{idx:100, peak:100, mode:"exuberant", hazard:TUNING.HAZARD0, corrLeft:0, corrRate:0, troughLeft:0, hist:[100], eras:[], revApplied:0},
-    issues:{homeless:BASELINE.homeless_count.v, unshelt:BASELINE.homeless_unshelt.v, mediCal:BASELINE.medi_cal.v, prison:BASELINE.prison_pct.v,
+    issues:{homeless:BASELINE.homeless_count.v, unshelt:BASELINE.homeless_unshelt.v,
+      hmlShares:{la:45,bay:25,val:30}, // SHELF-3: LA county ~45%, Bay ~25%, Valley+rest ~30% of the PIT count
+      mediCal:BASELINE.medi_cal.v, prison:BASELINE.prison_pct.v,
       insur:38, unemp:BASELINE.unemployment.v, grid:BASELINE.grid_margin.v, fireYtd:0,
       housingRate:9.2, housingCum:0, hsr:"seeking private capital", hsrStage:0, k12:BASELINE.k12_enroll.v,
       homelessBoost:0, housingBoost:0, insurBoost:0, medicalBoost:0, prisonRelief:0,
@@ -1356,7 +1358,7 @@ function newGame(cfg){
       hr1Applied:0, gann:TUNING.GANN_HEADROOM0, marker:null, weakened:null, committeeChit:false,
       primaryBlitz:false, recallSurvived:false, tips:{}, fiscalEmergencyY:0, bsaLastY:0,
       waiverCd:0, lastPulpit:-9, senVacancy:false, senFilled:false, surgeY:0, hsrTried:0,
-      eoCd:{}, hiringFreezeY:0},
+      eoCd:{}, hiringFreezeY:0, judPending:0, judges:0, waiverPending:0, fedCostShare:false, surgeFocus:null},
     hist:{approval:[], deficit:[], market:[], homeless:[], pc:[], insur:[], housing:[], medical:[], unemp:[]},
   };
   // actor init
@@ -1754,6 +1756,21 @@ function endMonth(g){
   pluralExecutive(g,d);
   // 8. actor threshold behaviors
   actorBehaviors(g,d);
+  // 8b. SHELF-5: signature drives grind monthly — visible, slow, and subject to the calendar
+  for(const m of g.measures.pending)if(m.gathering){
+    m.sigsGot+=Math.round(m.rate*1000*(1+RNG.norm(0,0.08)));
+    if(m.sigsGot>=m.sigs){
+      m.gathering=false;m.sigsGot=m.sigs;
+      const eTurn=g.turn<=21?23:47;m.electionTurn=eTurn;
+      dAp(g,0.5);
+      cov(g,"AP",`${m.t} QUALIFIES for the ${eTurn===23?"November 2028":"November 2030"} ballot`,
+        `${m.sigs.toLocaleString()} valid signatures cleared county verification — ${g.turn-m.startTurn} months of clipboards, at a blended cost the campaign will not itemize. At 25% of signatures the Legislature got its mandatory hearing; it could not amend or block the measure, a fact members recite like a grievance. The opposition committees filed the same afternoon.`);}
+    else if(g.turn-m.startTurn>=7){ // the 180-day clock is real
+      m.dead=true;
+      cov(g,"Politico",`The 180-day clock kills "${m.t}" at ${Math.round(m.sigsGot/m.sigs*100)}% of signatures`,
+        "The county registrars stopped accepting petitions at the deadline and the drive was short. The money is spent; the measure is not qualified; the vendors have already re-priced the next attempt. The clock, unlike the coalition, never wavers.");}
+  }
+  g.measures.pending=g.measures.pending.filter(m=>!m.dead);
   // 9. approval drift toward fundamentals
   driftApproval(g);
   // 10. PC regen — PC-1: quiet months bank capital. Unused slots read as restraint, and
@@ -1819,6 +1836,12 @@ function driftIssues(g,d){
   // REAL-HML-1: programs SHELTER people before they house them — the unsheltered share moves first
   // and fastest (it's also what the public sees, so approval keys off it harder than off the count).
   I.unshelt=clamp((I.unshelt||66)+0.08-(I.homelessBoost*0.10)-((I.lawHomeless||0)*0.04),38,80);
+  // SHELF-3: the count concentrates differently by region — LA's inflow is worst, the Bay's rents
+  // are worst, the Valley has the least service capacity. A FOCUSED surge bends its region's share.
+  {const S=I.hmlShares=I.hmlShares||{la:45,bay:25,val:30};
+   const foc=g.flags.surgeFocus&&g.flags.surgeFocus.until>g.turn?g.flags.surgeFocus.reg:null;
+   S.la+=0.012-(foc==="la"?0.25:0); S.bay+=0.004-(foc==="bay"?0.25:0); S.val+=-0.016-(foc==="val"?0.25:0);
+   const tot=S.la+S.bay+S.val; S.la=S.la/tot*100; S.bay=S.bay/tot*100; S.val=S.val/tot*100;}
   I.homelessBoost=Math.max(0,I.homelessBoost-0.06); // MECH-4: programs fade unless renewed — statutes don't
   I.housingBoost*=0.99; // ACT-3: EO/program housing pushes fade slowly too; only law and production are forever
   // housing production (thousands/mo) — statutes + programs + the BCSH secretary's résumé
@@ -1969,6 +1992,17 @@ function scheduledEvents(g,d){
       dAp(g,-3);
       if(RNG.r()<0.6+g.legStanding/200)enactBudget(g,true);
     }
+    // SHELF-4: the pension boards set EMPLOYER CONTRIBUTION RATES each July, off last year's returns.
+    // The unfunded liability breathing with the market was scenery; now it invoices the General Fund.
+    {const last=g.flags.penRateBase!==undefined?g.flags.penRateBase:256;
+     const delta=g.fiscal.pension-last;
+     const rateFx=clamp(delta*0.02,-0.3,0.6);
+     if(Math.abs(rateFx)>=0.06){
+       g.fiscal.deficit=clamp(g.fiscal.deficit+rateFx,-18,99);
+       cov(g,"LAO",rateFx>0?`CalPERS and CalSTRS raise employer rates — ${fmtB(rateFx)}/yr onto the General Fund`:`Pension returns give the budget a rare gift: rates ease ${fmtB(Math.abs(rateFx))}/yr`,
+         rateFx>0?`The boards met, the actuaries presented, and the employer contribution rates went up — the mechanical echo of ${fmtB(Math.abs(delta))} of unfunded-liability growth since last July. No vote of yours was taken or required: the constitutional independence of the retirement boards (Prop 162, 1992) means the invoice simply arrives. It compounds with the structural deficit, which did not need company.`
+         :`Market returns outran the discount rate and the boards passed a sliver of it back. Enjoy the line item; the actuaries' cover memo notes, twice, that one good year is weather and the liability is climate.`);}
+     g.flags.penRateBase=g.fiscal.pension;}
     if(y===2027){ // Lara & FAIR
       g.issues.insur=clamp(g.issues.insur-4,0,100);dAp(g,-1.5);
       cov(g,"CalMatters",OFFICERS.ins.nm.replace("Insurance Commissioner ","Commissioner ")+" approves FAIR Plan's 35.8% — and your phones melt",
@@ -2207,7 +2241,7 @@ function suspenseFile(g,label){
   const out=[];
   for(const b of held){
     const p=clamp(0.42+(g.player.attrs.INS-5)*0.035+g.legStanding/220+(g.actors.mods+g.actors.progs)/400,0.1,0.9);
-    if(b.rescued||RNG.r()<p){b.stage="floor";out.push([b,"released"]);}
+    if(b.rescued||RNG.r()<p){b.stage="floor";makeHoldouts(g,b);out.push([b,"released"]);}
     else{billDied(g,b,"held in Appropriations");out.push([b,"held"]);}
   }
   const died=out.filter(x=>x[1]==="held"),lived=out.filter(x=>x[1]==="released");
@@ -2219,6 +2253,32 @@ function billOutcome(g,b,res,eff){ // LEG-2: one ledger for the tracker panel
   g.bills.outcomeLog=(g.bills.outcomeLog||[]);
   g.bills.outcomeLog.unshift({t:g.turn,num:b.num,title:b.t,res,eff:eff||"",sponsored:!!b.sponsored});
   if(g.bills.outcomeLog.length>14)g.bills.outcomeLog.pop();
+}
+/* SHELF-1: the floor has NAMES. When your bill reaches the floor, the whip count identifies the
+   actual holdouts — synthetic members with districts and prices — and you can call them one by one. */
+const HOLDOUT_POOL=[
+ {nm:"Asm. R. Calloway",bloc:"mods",dist:"Tri-Valley",price:"a veterans' courthouse in the district budget"},
+ {nm:"Asm. D. Osei-Mensah",bloc:"progs",dist:"South L.A.",price:"a signing ceremony at her community college"},
+ {nm:"Asm. T. Bracamonte",bloc:"mods",dist:"North San Diego",price:"your veto pen away from his biotech bill"},
+ {nm:"Asm. K. Silvestri",bloc:"gop",dist:"Placer County",price:"a fire station ribbon-cutting with you in it"},
+ {nm:"Asm. J. Ferreira-Cruz",bloc:"progs",dist:"East Bay",price:"a public commitment on tenant funding"},
+ {nm:"Asm. M. Twomey",bloc:"mods",dist:"Ventura Coast",price:"an appointment for her chief of staff"},
+ {nm:"Asm. A. Okonjo",bloc:"progs",dist:"Sacramento",price:"a line about equity in the signing statement"},
+ {nm:"Asm. B. Halloran",bloc:"gop",dist:"Shasta",price:"quiet help on a water district earmark"},
+ {nm:"Sen. P. Villaseñor",bloc:"mods",dist:"Fresno",price:"a UC extension campus feasibility study"},
+ {nm:"Sen. G. Nakashima",bloc:"progs",dist:"Silicon Valley",price:"a meeting she can describe as 'productive'"},
+ {nm:"Sen. L. Beauchamp",bloc:"mods",dist:"Orange County",price:"your endorsement withheld from his primary rival"},
+ {nm:"Sen. C. Andrade",bloc:"progs",dist:"San Fernando Valley",price:"a board seat for a loyal labor ally"},
+];
+function hashStr(s){let h=7;for(const ch of s)h=(h*31+ch.charCodeAt(0))>>>0;return h;}
+function makeHoldouts(g,b){ // deterministic (no RNG stream use — saves replay identically)
+  if(b.holdouts||b.needs23)return; // 2/3 bills die on arithmetic, not on three phone calls
+  const seedH=hashStr(b.id+":"+g.turn+":"+g.seed);
+  const picks=[];const used=new Set();
+  for(let i=0;i<3;i++){let idx=(seedH>>(i*5))%HOLDOUT_POOL.length;
+    while(used.has(idx))idx=(idx+1)%HOLDOUT_POOL.length;
+    used.add(idx);picks.push({...HOLDOUT_POOL[idx],called:false,won:false});}
+  b.holdouts=picks;
 }
 function billEffSummary(fx){ // ACT-2: what a signature actually puts on the books
   const parts=[];
@@ -2344,8 +2404,9 @@ function resolveMeasures(g){
     if(passed){dAp(g,-3);g.fiscal.deficit=clamp(g.fiscal.deficit+0.6,-18,99);
       if(h.backer)dAct(g,h.backer,12);}
   }
-  const due=g.measures.pending.filter(m=>!m.electionTurn||m.electionTurn<=g.turn);
-  g.measures.pending=g.measures.pending.filter(m=>m.electionTurn&&m.electionTurn>g.turn);
+  // SHELF-5: measures still gathering signatures are NOT on this ballot
+  const due=g.measures.pending.filter(m=>!m.gathering&&(!m.electionTurn||m.electionTurn<=g.turn));
+  g.measures.pending=g.measures.pending.filter(m=>m.gathering||(m.electionTurn&&m.electionTurn>g.turn));
   for(const m of due){
     let yes=m.baseYes+(g.approval-48)*0.25+(m.playerSpend||0)*0.4;
     for(const o of m.oppose)if(g.actors[o]<=-20)yes-=6;
@@ -2378,7 +2439,7 @@ function randomEvents(g,d){
       g.flags.fireYearForced=false;
       g.flags.disasterActive={type:"fire",sev:3,turn:g.turn};
       I.fireYtd+=RNG.int(600,1100); I.insur=clamp(I.insur-9,0,100);
-      g.fiscal.deficit+=Math.max(0.5,1.2-cabPerk(g,"fire"));
+      g.fiscal.deficit+=Math.max(0.3,1.2-cabPerk(g,"fire")-(g.flags.fedCostShare?0.3:0)); // SHELF-6: the FEMA memo pays off here
       cov(g,"AP","Catastrophic wind-driven fire complex — thousands of structures",
         "A January-2025-scale event: urban conflagration, mass evacuations, a death toll that will rise for a week. The cameras are already asking where the governor is. DECLARE EMERGENCY unlocks the response machinery; how you run it is the whole story now.");
       dAp(g,-2); inbox(g,"CATASTROPHIC FIRE — Declare emergency & manage response (actions available)","NOW");
@@ -2766,11 +2827,21 @@ const ACTIONS=[
     transitionPick(g,code,type);
     if(type==="reformer")cov(g,"Politico",`A nomination for ${AGENCIES.find(a=>a[0]===code)[1]} heads to Senate Rules`,
       "The paperwork went up this morning; the hearing is 'to be calendared,' which is Rules-speak for 'we'll see.' Two months, give or take a grudge. The post runs on an acting deputy until then.");}},
+ /* SHELF-2: judicial appointments are a CALENDAR now — you nominate a profile, the Commission on
+    Judicial Appointments (Chief Justice, AG, senior presiding justice) hears it ~2 months later,
+    and one of the three votes belongs to an elected rival you do not control. */
  {id:"judicial",nm:"Judicial Appointment",cat:"Constitutional",slots:1,pc:2,
-  when:g=>{const y=turnDate(g.turn).y;return g.flags.judicialY!==y?true:"One appellate seat per year in this model";},
-  run:(g,c)=>{g.flags.judicialY=turnDate(g.turn).y;dAp(g,0.5);
-    cov(g,"CalMatters","A justice, confirmed by three people you mostly don't control",
-      "The Commission on Judicial Appointments — Chief Justice, Attorney General, senior presiding justice — confirmed your appellate pick. Note the Senate's absence from that sentence; judicial confirmation runs on a different track entirely, and one of the three votes belongs to a rival. The pick outlasts your term by design: twelve-year terms, retention elections, and no recalls of your calls.");}},
+  when:g=>{const y=turnDate(g.turn).y;
+    if(g.flags.judPending)return "A nominee is already before the Commission ("+turnDate(g.flags.judPending).label+")";
+    return g.flags.judicialY!==y?true:"One appellate seat per year in this model";},
+  choices:g=>[
+    {id:"prosecutor",nm:"A career prosecutor",d:"Twenty years of convictions and a CDAA endorsement. The right cannot attack it; the left will grumble and confirm. Safe with the Commission.",cost:"GOP/mods +, progs −2 · low hearing risk"},
+    {id:"scholar",nm:"A law-school reformer",d:"Cited in three SCOTUS dissents, beloved by the clinics, described by the sheriffs' association as 'a professor.' The AG's seat on the Commission suddenly matters.",cost:"Progs/CAOC +, chamber − · HIGHER hearing risk"},
+    {id:"crossover",nm:"A respected trial judge, cross-party",d:"Appointed to the bench by the other party's governor, rated 'exceptionally well qualified.' Boring, brilliant, confirmable.",cost:"Mods + · lowest risk"}],
+  run:(g,c)=>{g.flags.judicialY=turnDate(g.turn).y;g.flags.judPending=g.turn+2;
+    queue(g,2,{k:"fn",fn:"_judconfirm",prof:c},"Commission on Judicial Appointments: hearing calendared","you");
+    cov(g,"CalMatters",`An appellate nomination goes to the Commission`,
+      `The nominee's file went to the Commission on Judicial Appointments this morning — Chief Justice, Attorney General, senior presiding justice; two votes confirm. Note who ISN'T in that sentence: the Senate. And note who IS: ${OFFICERS.ag.short}, elected by the same voters you were, with a race of their own to think about. The hearing is calendared for ${turnDate(g.turn+2).long}.`);}},
  /* ACT-3: EOs are the fast, fading, litigable tool. Statutes stick; orders point the bureaucracy.
     Every EO: an OPR implementation roll (the org chart executes it well or badly), a 10-month
     cooldown per order (re-signing the same order is a press release), and — for the aggressive
@@ -3072,16 +3143,21 @@ const ACTIONS=[
       else if(b.stage==="suspense")out.push({id:b.id+"|trade",nm:`${b.num} ${b.t} — trade for a suspense release`,
         d:"The chair's list is a market. Offer a district appointment, a signing ceremony, a budget line nobody will trace — and the bill migrates from the held list to the released list before the hearing.",
         cost:b.rescued?"Release already secured":"COA roll · guarantees release if it lands"});
-      else if(b.stage==="floor")out.push({id:b.id+"|whip",nm:`${b.num} ${b.t} — whip the floor`,
+      else if(b.stage==="floor"){out.push({id:b.id+"|whip",nm:`${b.num} ${b.t} — whip the floor`,
         d:`Member-by-member calls from the horseshoe${b.whip?" (already whipped +"+b.whip+" Assembly votes)":""}. Current count if voted today: ${voteModel(g,false,{bonusSeats:(b.whip||0),tax:!!b.needs23}).asm}/80 Assembly · needs ${b.needs23?54:41}. Success adds +4 Assembly / +2 Senate to every vote this bill faces.`,
         cost:(b.whip||0)>=8?"Whip capped at +8 — every callable member has been called":"COA roll · stacks to +8"});
-    }
+        // SHELF-1: the holdouts have names, and the names have prices
+        for(const[i,h]of (b.holdouts||[]).entries())if(!h.called)
+          out.push({id:b.id+"|call"+i,nm:`${b.num} — call ${h.nm} (${h.dist})`,
+            d:`${h.nm} is withholding on "${b.t}" and everyone knows the price: ${h.price}. One call, one vote — INS roll, warmer if their caucus likes you.`,
+            cost:"+1 vote if it lands · burns the favor either way"});
+    }}
     return out;},
   run:(g,c)=>{const cut=c.lastIndexOf("|"),bid=c.slice(0,cut),verb=c.slice(cut+1);
     const b=g.bills.pipeline.find(x=>x.id===bid);if(!b)return;
     if(verb==="testify"){
       const r=roll(g,"INS",0.12,g.legStanding/300);
-      if(r.ok){b.stage=b.urgent?"floor":"suspense";b.boost=(b.boost||0)+0.2;
+      if(r.ok){b.stage=b.urgent?"floor":"suspense";b.boost=(b.boost||0)+0.2;if(b.urgent)makeHoldouts(g,b);
         cov(g,"CalMatters",`${b.num} clears committee with the governor in the room`,
           `You testified personally — governors almost never do — and the chair moved the vote up a week rather than make you come back. ${b.urgent?"The urgency clause sends it straight to monthly two-thirds floor votes.":"Next stop: the suspense file, where testimony means nothing and the chair's list means everything."}`);}
       else{g.legStanding-=2;
@@ -3096,6 +3172,15 @@ const ACTIONS=[
       else{g.legStanding-=2;
         cov(g,"Politico","The chair's price was too high",
           `The Appropriations chair wanted a commitment you weren't ready to make on camera. ${b.num} stays on the held list, subject to the ordinary odds. There is a number that moves it; you just haven't offered it.`);}}
+    else if(verb.startsWith("call")){
+      const h=(b.holdouts||[])[parseInt(verb.slice(4),10)];if(!h||h.called)return;
+      h.called=true;
+      const r=roll(g,"INS",0.1,(g.actors[h.bloc]||0)/250);
+      if(r.ok){h.won=true;b.whip=(b.whip||0)+1;
+        cov(g,"Politico",`${h.nm} comes off the fence on ${b.num}`,
+          `The call lasted eleven minutes; the operative sentence was about ${h.price}. ${h.nm} of ${h.dist} is now a yes, and a yes with a name is worth more than a point in a poll — it moves the count the engine actually runs. The price will be collected later, in the currency of ${h.price.split(" ").slice(-2).join(" ")}.`);}
+      else{cov(g,"Politico",`${h.nm} takes the call, keeps the fence`,
+          `Warm, noncommittal, and — by Thursday — quoted. "The governor and I had a productive conversation about priorities." Translation: the price went up. The member stays a holdout and the building knows you asked.`);}}
     else if(verb==="whip"){
       if((b.whip||0)>=8)return;
       const r=roll(g,"COA",0.1,(g.actors.progs+g.actors.mods)/500);
@@ -3124,15 +3209,16 @@ const ACTIONS=[
     const cost=m.type==="ICA"?12:8;
     if(g.player.chest<cost){cov(g,"Politico","Signature drive stalls at the bank","Qualification runs ~$9 a signature and the war chest can't cover the invoice. FUNDRAISE first, or make peace with the Legislature you were trying to route around.");return;}
     g.player.chest-=cost;
-    const ok=selfFund||roll(g,"COA",0.1,0).ok;
-    if(ok){const eTurn=g.turn<=17?23:47;
-      g.measures.pending.push({...m,playerSpend:2,electionTurn:eTurn});
-      for(const o of m.oppose)dAct(g,o,-10);
-      const nextNov=eTurn===23?"November 2028":"November 2030";
-      cov(g,"AP",`${m.t} qualifies for the ${nextNov} ballot`,
-        (selfFund?"SELF-FUND: you wrote the check personally — no donors consulted, no interest group holding the pen. The only background that can credibly threaten to go around the Legislature at will just did. ":"The coalition held and the signatures — "+m.sigs.toLocaleString()+" valid — cleared county verification. ")+
-        "At 25% of signatures the Legislature got its mandatory hearing; it could not amend or block the measure, a fact members recite like a grievance. The opposition campaign committees filed the same afternoon.");}
-    else cov(g,"Politico","The initiative coalition cracks before the deadline","Half the funders wanted different ballot language and the 180-day clock does not negotiate. The money is spent; the measure is not qualified. The Legislature noticed you tried.");}},
+    // SHELF-5: qualification is a DRIVE now — months of visible gathering on the Bill Tracker,
+    // at ~$9 a name against the 180-day clock, not an instant roll.
+    const strong=selfFund||roll(g,"COA",0.1,0).ok;
+    const army=BACKGROUNDS.find(b=>b.id===g.player.bg).fieldArmy;
+    const rate=(strong?RNG.int(150,210):RNG.int(80,125))*(army?1.25:1);
+    g.measures.pending.push({...m,playerSpend:2,gathering:true,sigsGot:0,rate,startTurn:g.turn});
+    for(const o of m.oppose)dAct(g,o,-10);
+    cov(g,"AP",`Signature drive launches: "${m.t}"`,
+      (selfFund?"SELF-FUND: you wrote the check personally — no donors consulted, no interest group holding the pen. ":"")+
+      `${m.sigs.toLocaleString()} valid signatures needed at roughly $9 a name, with the 180-day clock already running. ${strong?"The vendor contracts are signed and the clipboards are outside every Costco in the state — a strong operation, on pace.":"The coalition bickered over ballot language for three weeks first — the operation launches understaffed and behind pace."}${army?" FIELD ARMY: your locals gather alongside the paid crews — the rate shows it.":""} Progress runs on the Bill Tracker; the opposition's trackers photograph every clipboard.`);}},
  {id:"oppose",nm:"Oppose a Hostile Measure",cat:"Political",slots:1,pc:4,
   when:g=>g.measures.hostile.length?true:"No hostile measure pending",
   run:(g,c)=>{const m=g.measures.hostile.shift();g.player.chest=Math.max(0,g.player.chest-5);dAp(g,0.5);
@@ -3160,17 +3246,26 @@ const ACTIONS=[
         "A staffer's metadata survived the PDF. Now the story is you — 'Governor's office waged whisper campaign' — and every reporter you'll ever need knows what your envelopes look like.");}}},
 
  /* ---- Federal ---- */
+ /* SHELF-6: the waiver NEGOTIATION — pick a target, file the application, and wait months for an
+    answer shaped by your escalation ladder, your delegation, and who staffs your Washington file.
+    Three outcomes: clean approval, approval WITH STRINGS (they name a price), or denial. */
  {id:"waiver",nm:"Negotiate a Federal Waiver",cat:"Federal",slots:2,pc:5,
-  when:g=>g.turn>=g.flags.waiverCd?true:"CMS won't reopen the file until ~"+turnDate(g.flags.waiverCd).label,
-  run:(g,c)=>{g.flags.waiverCd=g.turn+6; // BAL-4: one serious waiver conversation per half-year
-    const wp=g.player.bg==="fed"?0.18:0;
-    const r=roll(g,"FED",0.3,wp+g.actors.fedadmin/300);
-    if(r.ok){g.flags.dealsDC++;g.fiscal.deficit=Math.max(0,g.fiscal.deficit-1.2);queue(g,3,{k:"issue",key:"medicalBoost",d:0.3});
-      cov(g,"AP","Against the odds: a Medi-Cal waiver clears CMS",
-        (g.player.bg==="fed"?"WAIVER PATH: you know which door in the Humphrey Building actually opens. ":"")+
-        "Flexibility on H.R.1 implementation worth roughly $1.2B a year and coverage stability for hundreds of thousands. With this federal administration, a signed waiver is a unicorn with a docket number — bank it and do not tweet about it.");}
-    else cov(g,"Politico","Waiver talks collapse in Baltimore",
-      "Months of technical work, then a two-line denial. The posture is adversarial at baseline — the model in the research file says outcomes are 'largely unresponsive to your behavior,' and the model is undefeated.");}},
+  when:g=>{if(g.flags.waiverPending)return "An application is already in the federal pipeline (answer ~"+turnDate(g.flags.waiverPending).label+")";
+    return g.turn>=g.flags.waiverCd?true:"The agencies won't reopen a file until ~"+turnDate(g.flags.waiverCd).label;},
+  choices:g=>{const ladder=g.fedLadder||0;
+    const odds=k=>{const base={medicaid:0.42,snap:0.36,disaster:0.5}[k];
+      return Math.round(clamp(base+(g.player.bg==="fed"?0.18:0)+(g.actors.deleg||0)/300+(g.actors.fedadmin||0)/300-ladder*0.04+(g.player.attrs.FED-5)*0.03,0.05,0.9)*100);};
+    return [
+      {id:"medicaid",nm:`Medi-Cal H.R.1 flexibility (CMS) — ~${odds("medicaid")}% by your team's read`,
+        d:"Flexibility on the federal implementation rules: ~$1.2B/yr of relief plus coverage stability. The biggest prize and the hardest room.",cost:"answer in ~3 months"},
+      {id:"snap",nm:`SNAP error-rate methodology relief (USDA) — ~${odds("snap")}%`,
+        d:"Re-baseline the ~11% payment-error rate that triggered the 15% state share. Success halves the $2B/yr SNAP shift.",cost:g.flags.snapLanded?"answer in ~3 months":"stronger AFTER the Oct 2027 shift lands (they negotiate over live wounds)"},
+      {id:"disaster",nm:`Disaster cost-share pre-agreement (FEMA) — ~${odds("disaster")}%`,
+        d:"A standing 90/10 cost-share memorandum for declared catastrophic events, negotiated BEFORE the next fire instead of during it. Shaves every future catastrophic hit.",cost:"answer in ~3 months"}];},
+  run:(g,c)=>{g.flags.waiverCd=g.turn+6;g.flags.waiverPending=g.turn+3;
+    queue(g,3,{k:"fn",fn:"_waiverResp",kind:c},"Federal waiver application under review ("+{medicaid:"CMS",snap:"USDA",disaster:"FEMA"}[c]+")","you");
+    cov(g,"CalMatters",`California files: ${{medicaid:"a Medi-Cal flexibility waiver at CMS",snap:"a SNAP error-rate appeal at USDA",disaster:"a disaster cost-share memorandum at FEMA"}[c]}`,
+      `The application ran ${RNG.int(140,420)} pages plus appendices, and the quiet work starts now: your Washington office walking the building, the delegation signing letters, the general counsel pre-briefing the likely objections. ${(g.fedLadder||0)>=3?"Your escalation ladder is at rung "+g.fedLadder+" — every public fight you picked is a page in THEIR briefing book too.":"The posture is adversarial at baseline; the technical staff, occasionally, are not."} Answer expected ~${turnDate(g.turn+3).long}.`);}},
  {id:"disaster_funds",nm:"Request Federal Disaster Funds",cat:"Federal",slots:1,pc:2,
   when:g=>g.flags.emergency||g.flags.disasterActive?true:"Requires an active/declared disaster",
   run:(g,c)=>{const r=roll(g,"FED",0.2,g.player.party==="R"?0.1:0);
@@ -3228,6 +3323,50 @@ LAG_FNS._confirm=(g,fx)=>{
       (g.player.party==="R"?"A Democratic Senate Rules Committee sat on a Republican governor's nominee for months, then let it die of exposure. The message was for you, not the nominee. ":"Senate Rules sat on it, leaked from it, and finally starved it. ")+
       "The nominee withdrew 'to spend time with family,' the Capitol's oldest cause of death. The post is VACANT — an acting deputy runs it (badly) until you fill it.");}
 };
+/* SHELF-6: the federal answer arrives — clean, with strings, or not at all. */
+LAG_FNS._waiverResp=(g,fx)=>{
+  g.flags.waiverPending=0;
+  const k=fx.kind,ladder=g.fedLadder||0;
+  const base={medicaid:0.42,snap:0.36,disaster:0.5}[k]||0.4;
+  const diff=0.52-base; // roll() adds ~0.22+FED*0.055; diff centers the same odds the choices displayed
+  const r=roll(g,"FED",diff,(g.player.bg==="fed"?0.18:0)+(g.actors.deleg||0)/300+(g.actors.fedadmin||0)/300-ladder*0.04);
+  const apply=()=>{
+    if(k==="medicaid"){g.fiscal.deficit=Math.max(-18,g.fiscal.deficit-1.2);queue(g,2,{k:"issue",key:"medicalBoost",d:0.3},"waiver flexibility phasing in","you");}
+    else if(k==="snap"){g.fiscal.deficit=Math.max(-18,g.fiscal.deficit-(g.flags.snapLanded?1.0:0.5));}
+    else{g.flags.fedCostShare=true;}};
+  if(r.ok&&r.margin>0.15){ // clean approval
+    g.flags.dealsDC++;apply();dAp(g,1);
+    cov(g,"AP",`APPROVED: ${{medicaid:"the Medi-Cal waiver clears CMS",snap:"USDA re-baselines California's SNAP error rate",disaster:"FEMA signs the standing cost-share memorandum"}[k]}`,
+      (g.player.bg==="fed"?"WAIVER PATH: you knew which door in the building actually opens. ":"")+
+      "Signed, sealed, and — per your Washington office's explicit advice — not tweeted about. With this federal administration a clean approval is a unicorn with a docket number. Bank it; the next request leans on this one's precedent.");}
+  else if(r.ok){ // approval with strings
+    g.flags.dealsDC++;apply();spendPC(g,5);dAct(g,"progs",-4);dAct(g,"fedadmin",3);
+    cov(g,"CalMatters",`Approved — WITH STRINGS: Washington names its price`,
+      `The approval letter came with a side letter: quiet cooperation on two enforcement matters, a joint press availability your base will hate, and language your general counsel calls "unusually personal." You paid it — 5 PC, the progressives' trust, and the federal administration now holds a marker with your name on it. The relief is real. So is the receipt.`);}
+  else{
+    dAct(g,"fedadmin",-2);dAp(g,-0.5);
+    cov(g,"Politico",`Denied: ${{medicaid:"CMS rejects the Medi-Cal waiver",snap:"USDA declines the error-rate appeal",disaster:"FEMA passes on the cost-share memorandum"}[k]} — two lines, no reasons`,
+      `Months of technical work, a ${ladder>=3?"briefing book of your public fights, ":""}and a denial that quotes no statute. The research file models this administration as adversarial at baseline and 'largely unresponsive to your behavior'; the model remains undefeated. The file can be reopened in six months. The deficit cannot.`);}
+};
+/* SHELF-2: the Commission hearing — two of three votes confirm, and the AG's vote is theirs alone. */
+LAG_FNS._judconfirm=(g,fx)=>{
+  g.flags.judPending=0;
+  const risk={prosecutor:0.06,scholar:0.14,crossover:0.02}[fx.prof]||0.08;
+  const p=0.92-risk-(g.approval<38?0.06:0); // a weak governor invites a rival's statement vote
+  if(RNG.r()<p){
+    g.flags.judges=(g.flags.judges||0)+1;dAp(g,0.5);
+    if(fx.prof==="prosecutor"){dAct(g,"gop",3);dAct(g,"mods",3);dAct(g,"ccpoa",3);dAct(g,"progs",-2);}
+    else if(fx.prof==="scholar"){dAct(g,"progs",4);dAct(g,"caoc",4);dAct(g,"chamber",-3);}
+    else{dAct(g,"mods",4);}
+    cov(g,"CalMatters",`Confirmed: your ${g.flags.judges===1?"first":g.flags.judges+ordSuffix(g.flags.judges)} appellate justice is seated`,
+      `The Commission voted ${p>0.86?"3–0, eleven minutes, no fireworks":"2–1 — the Attorney General's no came with a four-minute statement that was really about next year's primary"}. Twelve-year term, retention elections, no recalls of your calls: the pick outlasts your governorship by design. Benches are the only legacy this office keeps on purpose.`);
+  }else{
+    dAp(g,-1);spendPC(g,3);
+    cov(g,"AP","The Commission rejects your nominee — in public, on camera",
+      `Two votes confirm; you got one. ${OFFICERS.ag.nm} voted no with visible satisfaction and a prepared statement, and the senior presiding justice followed the AG rather than the governor — the plural executive, working exactly as the voters built it. The seat stays open; the next nomination waits for the calendar and a thicker file.`);
+  }
+};
+function ordSuffix(n){return n%10===2&&n!==12?"nd":n%10===3&&n!==13?"rd":"th";}
 /* ACT-3: the lawsuit an aggressive EO buys. ~45% the state wins; otherwise the effect is clawed back. */
 LAG_FNS._eoSuit=(g,fx)=>{
   if(RNG.chance(0.45)){
@@ -3246,7 +3385,7 @@ LAG_FNS._defederalize=g=>{g.flags.guardFederalized=false;
 LAG_FNS._advanceCommittee=g=>{
   for(const b of g.bills.pipeline)if(b.stage==="committee"){
     const p=clamp(0.6+(g.player.attrs.INS-5)*0.03+g.legStanding/300+(b.boost||0),0.2,0.97); // LEG-3: testimony pressure counts
-    if(RNG.r()<p){b.stage=b.urgent?"floor":"suspense";
+    if(RNG.r()<p){b.stage=b.urgent?"floor":"suspense";if(b.urgent)makeHoldouts(g,b);
       cov(g,"CalMatters",`${b.num} clears policy committee — next stop, the suspense file`,
         "The easy part is over. Appropriations holds fiscal bills in bulk and disposes of them in bulk — twice a year, in minutes, without recorded individual votes. Yours now waits with several hundred others for the chair's list."+(b.boost?" Your personal appearance at the hearing is the reason the vote wasn't close.":""));}
     else{billDied(g,b,"died in policy committee");
@@ -3301,11 +3440,23 @@ ACTIONS.push({id:"hsrpush",nm:"Advance High-Speed Rail",cat:"Political",slots:1,
 /* BAL-2 companion: homelessness needs a program you fund, not just orders you sign */
 ACTIONS.push({id:"surge",nm:"Homelessness Surge Program",cat:"Political",slots:2,pc:6,
   when:g=>g.flags.surgeY!==turnDate(g.turn).y?true:"One surge appropriation per year",
+  choices:g=>{const S=g.issues.hmlShares||{la:45,bay:25,val:30};const k=g.issues.homeless/100;
+    return [
+      {id:"statewide",nm:"Statewide formula — every county gets its share",d:"The politically clean version: allocations by formula, nobody's mayor left out, no region moved dramatically.",cost:"−$1.2B/yr · mayors +6"},
+      {id:"la",nm:`Concentrate on Los Angeles (${Math.round(S.la*k).toLocaleString()} people)`,d:"Half the money into the county with the worst inflow. LA's share of the count bends for a year; every other region's delegation notices.",cost:"−$1.2B/yr · LA bends 12mo · Bay/Valley mayors −"},
+      {id:"bay",nm:`Concentrate on the Bay Area (${Math.round(S.bay*k).toLocaleString()} people)`,d:"Target the most expensive housing market in America. Visible fast — the national press lives there.",cost:"−$1.2B/yr · Bay bends 12mo · approval +0.3"},
+      {id:"val",nm:`Concentrate on the Valley & rural counties (${Math.round(S.val*k).toLocaleString()} people)`,d:"The counties with no service infrastructure at all. Quietest politically, largest marginal impact per dollar.",cost:"−$1.2B/yr · Valley bends 12mo · inland cred"}];},
   run:(g,c)=>{g.flags.surgeY=turnDate(g.turn).y;
     g.fiscal.deficit=clamp(g.fiscal.deficit+1.2,-18,99);
     queue(g,2,{k:"issue",key:"homelessBoost",d:6},"Homelessness surge program standing up","you");
     dAct(g,"mayors",6);dAct(g,"localgov",4);dAct(g,"mods",-4);
-    cov(g,"CalMatters","A $1.2B/yr homelessness surge — money, with strings and a scoreboard",
+    const regNm={la:"Los Angeles",bay:"the Bay Area",val:"the Valley and rural counties"}[c];
+    if(c&&c!=="statewide"){g.flags.surgeFocus={reg:c,until:g.turn+12};
+      if(c==="la")dAct(g,"mayors",2);if(c==="bay")dAp(g,0.3);if(c==="val"){dAct(g,"agri",3);dAct(g,"localgov",2);}
+      dAct(g,"localgov",-2); // the unfocused counties' lobbyists file their objection
+      cov(g,"CalMatters",`A $1.2B/yr homelessness surge — concentrated on ${regNm}`,
+        `Against every political instinct in the building, the money is NOT peanut-buttered: encampment resolution teams, board-and-care rates and Homekey acquisitions land where you aimed them. ${regNm}'s share of the count bends over the next year — measurably, on the regional chart — and the counties that didn't get the concentration have already scheduled their press conference.`);}
+    else cov(g,"CalMatters","A $1.2B/yr homelessness surge — money, with strings and a scoreboard",
       "Encampment resolution teams, board-and-care rate bumps, Homekey acquisitions, and — the part the mayors actually noticed — the money is real and multi-year. The moderates' caucus noted the deficit. The count, if this is renewed annually and paired with housing production, bends in a way press releases never bent it. The promise math finally has an appropriation behind it.");}});
 
 /* MISS-1: the U.S. Senate vacancy — the enormous national event */
@@ -3652,6 +3803,9 @@ function issuesPanel(g){
   return `<div class="panel"><h3>Issues <span class="subtle">▴ = your action landing</span></h3>
     ${row("Homelessness "+`<span class="tag VERIFIED" title="${esc(BASELINE.homeless_count.src)}">VERI</span>`,I.homeless.toLocaleString(),g.hist.homeless,"var(--blue)","homeless")}
     <div class="kv"><span class="k" style="font-size:11px" title="${esc(BASELINE.homeless_unshelt.src)} Programs shelter people before they house them — this share moves first, and it is what voters see.">↳ unsheltered share</span><span class="v ${(I.unshelt||66)>70?"bad":(I.unshelt||66)<58?"good":""}">${(I.unshelt||66).toFixed(0)}%</span></div>
+    ${(()=>{const S=I.hmlShares;if(!S)return "";const k=I.homeless/100;const foc=g.flags.surgeFocus&&g.flags.surgeFocus.until>g.turn?g.flags.surgeFocus.reg:null;
+      const cell=(id,nm)=>`<span title="${nm}'s share of the statewide count${foc===id?" — SURGE CONCENTRATED HERE through "+turnDate(g.flags.surgeFocus.until).label:""}" style="${foc===id?"color:var(--aqua)":""}">${nm} ${Math.round(S[id]*k/1000)}k${foc===id?" ▾":""}</span>`;
+      return `<div class="kv"><span class="k" style="font-size:10.5px">↳ by region</span><span class="v" style="font-size:10px;font-family:var(--mono)">${cell("la","LA")} · ${cell("bay","Bay")} · ${cell("val","Valley+")}</span></div>`;})()}
     ${row("Housing units (cum, k)",Math.round(I.housingCum)+"k",g.hist.housing,"var(--aqua)","housing")}
     ${row("Medi-Cal (M)",I.mediCal.toFixed(1)+"M",g.hist.medical,"var(--violet)","medical")}
     ${row("Insurance stability",Math.round(I.insur)+"/100",g.hist.insur,I.insur<35?"var(--red)":"var(--aqua)","insur")}
@@ -3723,7 +3877,8 @@ function inMotionPanel(g){
 /* LEG-2: the bill tracker — where every piece of legislation actually is, in public */
 function legTrackerPanel(g){
   const pipe=g.bills.pipeline,desk=g.bills.desk,log=(g.bills.outcomeLog||[]).slice(0,6);
-  if(!pipe.length&&!desk.length&&!log.length)return "";
+  const drives=(g.measures.pending||[]).some(m=>m.gathering);
+  if(!pipe.length&&!desk.length&&!log.length&&!drives)return "";
   const d=turnDate(g.turn);
   const stageRow=b=>{
     if(b.stage==="twoYear")return `<div class="lt-row"><div class="lt-hd"><b>${b.num}</b> ${b.t} <span class="pill" style="color:var(--violet);border-color:var(--violet);font-size:8px">TWO-YEAR BILL</span></div>
@@ -3740,10 +3895,15 @@ function legTrackerPanel(g){
       ${b.rescued&&b.stage==="suspense"?'<span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">RELEASE SECURED</span>':""}
       ${b.whip?`<span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">WHIPPED +${b.whip}</span>`:""}</div>
       <div class="lt-stages">${chips}</div>
-      <div class="lt-meta"><span class="num">count if voted today: Asm ${v.asm}/${needA} · Sen ${v.sen}/${needS}</span> <span class="subtle">· next: ${next}</span></div></div>`;};
+      <div class="lt-meta"><span class="num">count if voted today: Asm ${v.asm}/${needA} · Sen ${v.sen}/${needS}</span> <span class="subtle">· next: ${next}</span></div>
+      ${b.stage==="floor"&&(b.holdouts||[]).length?`<div class="lt-meta" style="font-size:10px">HOLDOUTS: ${b.holdouts.map(h=>`<span style="color:${h.won?"var(--good)":h.called?"var(--muted)":"var(--warn)"}" title="${esc(h.dist+" — wants "+h.price)}">${h.won?"✓ ":""}${esc(h.nm)}</span>`).join(" · ")} <span class="subtle">(PUSH LEGISLATION → call them)</span></div>`:""}</div>`;};
   return `<div class="panel"><h3>Bill Tracker <span class="subtle">${pipe.length} in the building · ${desk.length} on the desk</span></h3>
   ${pipe.length?pipe.map(stageRow).join(""):`<div class="subtle">Nothing of yours is in the building. SPONSOR LEGISLATION opens the ${d.y} slate${d.m>6?" in January (introduction deadline passed)":""}.</div>`}
   ${desk.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">ON THE DESK — sign or veto by Sept 30</div>${desk.map(b=>`<div class="lt-meta">▸ ${b.num} ${b.t}${b.sponsored?' <span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">YOURS</span>':""}${b.fromLeg?' <span class="subtle" style="font-size:9px">(the Legislature’s)</span>':""}</div>`).join("")}`:""}
+  ${(g.measures.pending||[]).some(m=>m.gathering)?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">✍ SIGNATURE DRIVES <span style="float:right">~$9/name · 180-day clock</span></div>${g.measures.pending.filter(m=>m.gathering).map(m=>{const pct=Math.min(100,m.sigsGot/m.sigs*100);const monthsIn=g.turn-m.startTurn;
+    return `<div class="lt-row"><div class="lt-hd" style="font-size:11.5px">${esc(m.t)} <span class="subtle num">(${m.type} · needs ${m.sigs.toLocaleString()})</span></div>
+    <div class="abar" style="height:9px;margin:3px 0"><div class="fill" style="left:0;width:${pct}%;background:${pct>70?"var(--good)":pct>35?"var(--yellow)":"var(--serious)"}"></div></div>
+    <div class="lt-meta num">${m.sigsGot.toLocaleString()} gathered (${Math.round(pct)}%) · month ${monthsIn+1} of ~6 · ${monthsIn>=5&&pct<85?'<span style="color:var(--critical)">THE CLOCK IS WINNING</span>':"on the clock"}</div></div>`;}).join("")}`:""}
   ${log.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">RECENT OUTCOMES</div>${log.map(o=>`<div class="lt-meta"><span class="due">[${turnDate(o.t).label}]</span> ${o.num} ${esc(o.title)} — <span style="color:${o.res==="signed"?"var(--good)":o.res==="vetoed"?"var(--red)":o.res==="became law unsigned"?"var(--ink2)":"var(--serious)"}">${o.res}</span>${o.eff?` <span class="subtle" style="font-size:9.5px">(${esc(o.eff)})</span>`:""}${o.sponsored?' <span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">YOURS</span>':""}</div>`).join("")}`:""}
   </div>`;
 }
