@@ -359,9 +359,13 @@
   .trow{border-top:1px dotted var(--grid); padding:7px 0;}
   .trow-h{font-size:12.5px; color:var(--ink); margin-bottom:5px;}
   .trow-opts{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:6px;}
-  .tcand{text-align:left; font-size:11.5px; padding:7px 10px; position:relative;}
+  .tcand{text-align:left; font-size:11.5px; padding:7px 10px 8px; position:relative;}
   .tcand:hover:not(:disabled){border-color:rgba(201,133,0,.5);}
   .tcand .risk{position:absolute; top:3px; right:6px; font-family:var(--mono); font-size:7.5px; color:var(--warn); letter-spacing:.08em;}
+  .tcand .tc-nm{display:block; color:var(--ink); font-weight:600;}
+  .tcand .tc-tag{display:block; color:var(--ink2); font-size:10.5px; font-style:italic; margin-top:1px;}
+  .tcand .tc-wt{display:block; font-family:var(--mono); font-size:9px; color:var(--yellow); margin-top:3px; letter-spacing:.02em; white-space:normal;}
+  .tcand .tc-fx{color:var(--muted);}
   .pendrow{opacity:.8;}
 
   /* ---- chart explorer & HSR tracker ---- */
@@ -516,6 +520,7 @@ const MODEL_NOTES=[
   ["Reserve totals","LAO-narrow (~$20B) and administration-wide (~$28.8–35B) definitions legitimately differ. The dashboard shows both — 'how much do we have' is a contested question, not a fact."],
   ["Recall probability model","No published approval→recall mapping exists. Engine uses: qualification pressure builds when any funded actor is at existential opposition AND approval < 40."],
   ["Unemployment & housing production","Jan 2027 values are PROJECTED placeholders; verify vs EDD / HCD."],
+  ["Cabinet backgrounds & weights","Every agency candidate is a SYNTHETIC_OFFICEHOLDER with a modeled résumé, and the résumé is load-bearing: a Finance director the LAO trusts adds credible dollars to every budget; a Receiver-team alumna at Corrections slows crowding; an ex-SEIU secretary at Labor cools strike odds; a YIMBY litigator at Housing moves production. The weights are design estimates — no published appointee-effect coefficients exist — but the mechanism (who runs the department changes what the department does) is the verified part."],
 ];
 
 /* ===================== 3. ACTORS (DOC §4 / §6.4) ===================== */
@@ -832,19 +837,128 @@ const AGENCIES=[
  ["DOF","Department of Finance"],["CalHHS","Health & Human Services"],["CNRA","Natural Resources"],
  ["CalSTA","Transportation"],["CDCR","Corrections"],["LWDA","Labor & Workforce"],
  ["GovOps","Government Operations"],["BCSH","Business, Consumer Services & Housing"],["CalEPA","Environmental Protection"]];
-const APPOINTEE_NAMES=["M. Delgado","J. Okafor","S. Whitfield","R. Nakamura","A. Beaumont","L. Vasquez","T. Kaczmarek","D. Iyer","C. Roubideaux","P. Lindqvist","E. Marchetti","K. Osei"];
-/* MECH-8 fix: 27 distinct names — each agency gets its own [holdover, ally, reformer]; nobody holds two jobs. */
-const CAB_NAMES=[
- ["M. Delgado","R. Castaneda","V. Okoye"],      // DOF
- ["J. Okafor","H. Wintersteen","F. Alameda"],   // CalHHS
- ["S. Whitfield","B. Tallchief","N. Grewal"],   // CNRA
- ["R. Nakamura","G. Petrakis","W. LaFontaine"], // CalSTA
- ["A. Beaumont","O. Sandoval","Y. Kimura"],     // CDCR
- ["L. Vasquez","D. Aguirre","M. Osterberg"],    // LWDA
- ["T. Kaczmarek","C. Byrd","I. Farrokhzad"],    // GovOps
- ["D. Iyer","P. Marchetti","S. Njoku"],         // BCSH
- ["C. Roubideaux","K. Ellingson","J. Talamantes"]]; // CalEPA
-function candName(agencyIdx,type){const t=type==="holdover"?0:type==="ally"?1:2;return (CAB_NAMES[agencyIdx]||CAB_NAMES[0])[t];}
+/* MECH-8 fix: 27 distinct people — each agency gets its own [holdover, ally, reformer]; nobody holds two jobs.
+   APPT-1: every candidate is a SYNTHETIC_OFFICEHOLDER with a résumé that carries MECHANICAL WEIGHT.
+   perk = passive engine effect while seated (not pending, not caretaker) — summed by cabPerk():
+     budget  $B of LAO-credible solutions added to every budget you propose
+     medical Medi-Cal drift mitigation, M enrollees/mo        prison  crowding relief, % of design capacity/mo
+     fire    $B shaved off catastrophic-fire fiscal hits       strike  monthly strike-odds reduction
+     vetting monthly scandal-odds reduction                    housing housing-production boost points
+     hsr     added probability on HSR investor courtship       grid    planning-reserve margin points/mo
+   fx.act = the political signal of the pick itself — applied when SEATED (instant picks) or CONFIRMED (reformers).
+   risk    = added Senate Rules difficulty for reformers (négative = Rules likes the résumé). */
+const CAB_CANDIDATES={
+ DOF:[
+  {nm:"M. Delgado",type:"holdover",q:2,tag:"career DOF — budget officer under two governors",risk:0,
+   bio:"Wrote pieces of the last four May Revisions and knows which fund shifts are load-bearing. Owes you nothing, which is the point.",
+   perk:{budget:0.7},fx:{}},
+  {nm:"R. Castaneda",type:"ally",q:2,tag:"termed-out Assembly Budget chair",risk:0,
+   bio:"Ran the Assembly's side of three budget conferences. The subcommittees are staffed with people she trained.",
+   perk:{budget:0.4},fx:{progs:3,mods:3}},
+  {nm:"V. Okoye",type:"reformer",q:3,tag:"ex-LAO principal analyst",risk:-0.03,
+   bio:"Spent eleven years writing the reviews that grade your budgets — including the phrase 'overly exuberant.' Rules confirms LAO alumni with something close to relief.",
+   perk:{budget:1.4},fx:{chamber:4}}],
+ CalHHS:[
+  {nm:"J. Okafor",type:"holdover",q:2,tag:"ran Medi-Cal operations for a decade",risk:0,
+   bio:"Has personally survived every eligibility-system migration since 2014. The county welfare directors return his calls first.",
+   perk:{medical:0.01},fx:{}},
+  {nm:"H. Wintersteen",type:"ally",q:2,tag:"county supervisor turned health-budget legislator",risk:0,
+   bio:"Came up through a county welfare board; votes in Rules are already counted. Locals treat the appointment as a seat at your table.",
+   perk:{medical:0.008},fx:{localgov:4}},
+  {nm:"F. Alameda",type:"reformer",q:3,tag:"safety-net clinic network CEO",risk:0.02,
+   bio:"Built a 40-clinic network out of church basements and county contracts. Hospitals and progressives cheer; moderates hear 'spending' in her diction.",
+   perk:{medical:0.02},fx:{hosp:6,progs:3,mods:-2}}],
+ CNRA:[
+  {nm:"S. Whitfield",type:"holdover",q:2,tag:"CalFire veteran — ran two fire sieges",risk:0,
+   bio:"Commanded the state's response the last time the wind won. When the next complex ignites, the mutual-aid system answers to a known voice.",
+   perk:{fire:0.4},fx:{}},
+  {nm:"B. Tallchief",type:"ally",q:2,tag:"termed-out senator from timber country",risk:0,
+   bio:"The Valley and the water districts consider him one of theirs; the enviros consider that the problem.",
+   perk:{fire:0.2},fx:{agri:4,water:4,enviro:-2}},
+  {nm:"N. Grewal",type:"reformer",q:3,tag:"climate-resilience academic",risk:0.03,
+   bio:"Wrote the standard text on managed retreat, a phrase she will now spend four years not saying in public. Enviros elated; the Chamber suspicious.",
+   perk:{fire:0.3,grid:0.01},fx:{enviro:6,chamber:-3}}],
+ CalSTA:[
+  {nm:"R. Nakamura",type:"holdover",q:2,tag:"Caltrans lifer — knows every district engineer",risk:0,
+   bio:"Thirty years of change orders and Caltrans districts. Not a visionary; delivers exactly what is funded, which is rarer.",
+   perk:{hsr:0.04},fx:{}},
+  {nm:"G. Petrakis",type:"ally",q:2,tag:"termed-out Transportation chair",risk:0,
+   bio:"Carried the last three rail bonds and knows where the Authority's bodies are buried. The Trades lobbied for this pick by name.",
+   perk:{hsr:0.07},fx:{trades:4}},
+  {nm:"W. LaFontaine",type:"reformer",q:3,tag:"infrastructure-fund partner",risk:0.04,
+   bio:"Spent a career on the other side of the term sheet — the sovereign funds HSR needs are in her contacts. Rules will ask pointed questions about the portfolio.",
+   perk:{hsr:0.14},fx:{chamber:4,trades:-2}}],
+ CDCR:[
+  {nm:"A. Beaumont",type:"holdover",q:2,tag:"warden who rose to undersecretary",risk:0,
+   bio:"Ran the system's hardest yard without a headline. The Receiver's office describes him, grudgingly, as 'responsive.'",
+   perk:{prison:0.03},fx:{}},
+  {nm:"O. Sandoval",type:"ally",q:2,tag:"CCPOA-endorsed ex-legislator",risk:0,
+   bio:"The guards' union wrote checks to his last three campaigns and expects the courtesy returned. Progressives notice exactly that.",
+   perk:{prison:0.02},fx:{ccpoa:6,progs:-3}},
+  {nm:"Y. Kimura",type:"reformer",q:3,tag:"served on the federal Receiver's team",risk:0.05,
+   bio:"Knows the 137.5% math from the court's side of the v. The population curve bends under her plans; CCPOA has a file on her and Rules has CCPOA's number.",
+   perk:{prison:0.07},fx:{progs:5,ccpoa:-6}}],
+ LWDA:[
+  {nm:"L. Vasquez",type:"holdover",q:2,tag:"CalHR's lead negotiator, three contract cycles",risk:0,
+   bio:"Has sat across from every bargaining unit in the book and knows which strike threats are theater. Neither side loves her; both call her honest.",
+   perk:{strike:0.02},fx:{}},
+  {nm:"D. Aguirre",type:"ally",q:2,tag:"ex-SEIU political director",risk:0,
+   bio:"Labor's pick, and labor will act like it — walkout threats get a phone call before they get a press release. The Chamber reads the org chart and winces.",
+   perk:{strike:0.03},fx:{seiu:6,chamber:-4}},
+  {nm:"M. Osterberg",type:"reformer",q:3,tag:"labor economist — future-of-work portfolio",risk:0.02,
+   bio:"Wrote the displacement studies tech quotes and labor disputes. A theory-of-change hire whose theory the unions have already rejected.",
+   perk:{strike:0.01},fx:{tech:5,chamber:3,seiu:-4}}],
+ GovOps:[
+  {nm:"T. Kaczmarek",type:"holdover",q:2,tag:"state CIO who survived three modernizations",risk:0,
+   bio:"The FI$Cal scars are real and instructive. Knows which procurement shortcuts end in audits, because he has read all the audits.",
+   perk:{vetting:0.004},fx:{}},
+  {nm:"C. Byrd",type:"ally",q:2,tag:"termed-out Rules Committee member",risk:0,
+   bio:"Spent six years vetting other people's appointees; knows every question before it's asked and every skeleton's usual closet.",
+   perk:{vetting:0.003},fx:{}},
+  {nm:"I. Farrokhzad",type:"reformer",q:3,tag:"forensic auditor — ran a city anti-corruption office",risk:0.02,
+   bio:"Her unit's referrals ended nine careers, two of them friends of people now in Rules. The vetting operation you don't have, hired.",
+   perk:{vetting:0.008},fx:{mods:3}}],
+ BCSH:[
+  {nm:"D. Iyer",type:"holdover",q:2,tag:"HCD deputy — wrote the RHNA enforcement playbook",risk:0,
+   bio:"The builder's-remedy letters that terrify city attorneys go out over his signature. Quietly effective; cities pretend not to know his name.",
+   perk:{housing:2},fx:{}},
+  {nm:"P. Marchetti",type:"ally",q:2,tag:"big-city councilmember, land-use chair",risk:0,
+   bio:"Approved more units than any council in the state and has the recall attempt to show for it. Mayors consider the pick a peace offering.",
+   perk:{housing:1},fx:{mayors:4,localgov:4}},
+  {nm:"S. Njoku",type:"reformer",q:3,tag:"YIMBY litigator — sued cities for a living",risk:0.03,
+   bio:"Won the cases that made the builder's remedy real. Cities that lost to her now get to be regulated by her; their lobbyists have Rules on speed dial.",
+   perk:{housing:4},fx:{yimby:6,localgov:-5}}],
+ CalEPA:[
+  {nm:"C. Roubideaux",type:"holdover",q:2,tag:"air board executive officer",risk:0,
+   bio:"Implemented three governors' climate promises without once appearing on television. The permit queue moves under her; nobody knows how.",
+   perk:{grid:0.02},fx:{}},
+  {nm:"K. Ellingson",type:"ally",q:2,tag:"termed-out enviro-caucus leader",risk:0,
+   bio:"The green groups' first call and the Chamber's standing complaint. Brings the caucus goodwill; brings the caucus, period.",
+   perk:{grid:0.02},fx:{enviro:5,chamber:-3}},
+  {nm:"J. Talamantes",type:"reformer",q:3,tag:"permitting-reform czar from a governor's strike team",risk:0.02,
+   bio:"His one-stop-shop pilot cut clean-energy permit times in half and made him enemies with a mailing list. Business applauds; the enviros hear 'streamlining' and reach for counsel.",
+   perk:{grid:0.04,housing:1},fx:{chamber:4,enviro:-3}}],
+};
+function cabCand(code,type){const list=CAB_CANDIDATES[code]||CAB_CANDIDATES.DOF;
+  return list.find(c=>c.type===type)||list[0];}
+/* APPT-2: perks only count while actually seated — pending nominees and caretakers contribute nothing. */
+function cabPerk(g,key){let s=0;
+  for(const c of g.cabinet)if(!c.pending&&c.type!=="caretaker"&&c.perk)s+=(c.perk[key]||0);
+  return s;}
+const PERK_DESC={
+  budget:v=>`every budget +${fmtB(v)} LAO-credible`, medical:v=>`Medi-Cal decline slowed ${v.toFixed(3)}M/mo`,
+  fire:v=>`catastrophic fires −${fmtB(v)} damage`, hsr:v=>`HSR investor odds +${Math.round(v*100)}%`,
+  prison:v=>`prison crowding −${v.toFixed(2)}%/mo`, strike:v=>`strike odds −${Math.round(v*100)}pt/mo`,
+  vetting:v=>`scandal odds −${(v*100).toFixed(1)}pt/mo`, housing:v=>`housing production +${v} pts`,
+  grid:v=>`grid margin +${v.toFixed(2)}/mo`};
+function perkDesc(perk){if(!perk)return "";
+  return Object.entries(perk).map(([k,v])=>PERK_DESC[k]?PERK_DESC[k](v):"").filter(Boolean).join(" · ");}
+const ACTOR_SHORT={cta:"CTA",seiu:"SEIU",ccpoa:"CCPOA",cft:"CFT",trades:"Trades",chamber:"Chamber",tech:"Tech",ent:"Ent",
+  agri:"Ag",water:"Water",energy:"IOUs",hosp:"Hosp",caoc:"CAOC",enviro:"Enviros",yimby:"YIMBY",tenants:"Tenants",
+  localgov:"Locals",mayors:"Mayors",progs:"Progs",mods:"Mods",gop:"GOP",fedadmin:"DC",deleg:"Deleg"};
+function candFxSummary(fx){if(!fx)return "";
+  return Object.entries(fx).map(([id,d])=>`${ACTOR_SHORT[id]||id} ${d>0?"+":""}${d}`).join(" ");}
+function applyCandFx(g,cand){for(const[id,d]of Object.entries(cand.fx||{}))dAct(g,id,d);}
 
 /* ===================== 9c. EXISTENTIAL CAMPAIGNS (R5) ===================== */
 const CAMPAIGNS={
@@ -1084,7 +1198,9 @@ function newGame(cfg){
     inbox(g,"SCENARIO: Grand Bargain — leadership likes you, and the hole is $5B deeper",null);}
   // Cabinet: CONTINUITY walks in fully staffed; everyone else must actually build an administration (the transition set-piece)
   if(bg.continuity){
-    AGENCIES.forEach(([code,full],i)=>g.cabinet.push({nm:APPOINTEE_NAMES[i%APPOINTEE_NAMES.length],agency:code,agencyFull:full,q:2,type:"holdover"}));
+    // CONTINUITY inherits the outgoing administration's people — the actual holdover candidates, weights and all (no political signal fires; they were already in the building)
+    AGENCIES.forEach(([code,full])=>{const cand=cabCand(code,"holdover");
+      g.cabinet.push({nm:cand.nm,agency:code,agencyFull:full,q:cand.q,type:"holdover",tag:cand.tag,bio:cand.bio,perk:cand.perk});});
     g.transitionOpen=false;
   }else{
     g.transitionOpen=true;
@@ -1358,21 +1474,25 @@ function transitionPick(g,code,type){
   if(i<0||g.cabinet.find(c=>c.agency===code))return null;
   const full=AGENCIES[i][1];
   const noBench=g.player.bg==="media";
-  const nm=candName(i,type);
+  const cand=cabCand(code,type);
+  const q=Math.max(1,cand.q-(noBench?1:0));
+  const member={nm:cand.nm,agency:code,agencyFull:full,q,type,tag:cand.tag,bio:cand.bio,perk:cand.perk,fx:cand.fx,risk:cand.risk||0};
   if(type==="holdover"){
-    g.cabinet.push({nm,agency:code,agencyFull:full,q:Math.max(1,2-(noBench?1:0)),type});
-    if(!g.transitionOpen)cov(g,"Politico",`${nm} keeps the lights on at ${full}`,
-      "A holdover pick: instant confirmation, institutional memory, and no debts in either direction. The building's safest currency.");
+    g.cabinet.push(member);
+    applyCandFx(g,cand); // the signal of the pick: constituencies read the résumé
+    if(!g.transitionOpen)cov(g,"Politico",`${cand.nm} keeps the lights on at ${full}`,
+      `A holdover pick — ${cand.tag}. ${cand.bio} Instant confirmation, institutional memory, and no debts in either direction. The building's safest currency.`);
   }else if(type==="ally"){
-    g.cabinet.push({nm,agency:code,agencyFull:full,q:Math.max(1,2-(noBench?1:0)),type});
+    g.cabinet.push(member);
+    applyCandFx(g,cand);
     g.legStanding+=2;g.flags.committeeChit=true;
-    if(!g.transitionOpen)cov(g,"Politico",`A confirmable choice: ${nm} to ${full}`,
-      "Senate Rules scheduled the hearing before the press release finished sending. The building rewards those who staff it with its own — and a chair now owes you a courtesy on your next bill.");
-  }else{ // reformer — Senate Rules gets 2 months and a veto in practice
-    g.cabinet.push({nm,agency:code,agencyFull:full,q:Math.max(1,3-(noBench?1:0)),type,pending:true});
-    queue(g,2,{k:"fn",fn:"_confirm",code},`Senate Rules: confirmation of ${nm} (${code})`,"you");
+    if(!g.transitionOpen)cov(g,"Politico",`A confirmable choice: ${cand.nm} to ${full}`,
+      `${cand.tag} — ${cand.bio} Senate Rules scheduled the hearing before the press release finished sending. The building rewards those who staff it with its own — and a chair now owes you a courtesy on your next bill.`);
+  }else{ // reformer — Senate Rules gets 2 months and a veto in practice; the fx fire only if the nominee survives
+    g.cabinet.push({...member,pending:true});
+    queue(g,2,{k:"fn",fn:"_confirm",code},`Senate Rules: confirmation of ${cand.nm} (${code})`,"you");
   }
-  return nm;
+  return cand.nm;
 }
 function transitionDeadline(g){ // end of March: acting deputies become caretakers, ready or not
   if(!g.transitionOpen)return;
@@ -1501,11 +1621,11 @@ function driftIssues(g,d){
   if(g.actors.mayors>30)hPct-=0.04;
   I.homeless=Math.round(I.homeless*(1+hPct/100+RNG.norm(0,0.001)));
   I.homelessBoost=Math.max(0,I.homelessBoost-0.06); // MECH-4: programs fade unless renewed
-  // housing production (thousands/mo)
-  I.housingRate=clamp(9.2*(1+I.housingBoost/100)*(M.mode==="trough"?0.7:M.mode==="correction"?0.85:1),4,20);
+  // housing production (thousands/mo) — APPT: the BCSH secretary's résumé is a standing boost
+  I.housingRate=clamp(9.2*(1+(I.housingBoost+cabPerk(g,"housing"))/100)*(M.mode==="trough"?0.7:M.mode==="correction"?0.85:1),4,20);
   I.housingCum+=I.housingRate;
   // medi-cal glide toward 12M end-2029 under H.R.1 — L6: recessions push people ONTO the rolls
-  let mcDrift=TUNING.MC_DRIFT+I.medicalBoost*0.02;
+  let mcDrift=TUNING.MC_DRIFT+I.medicalBoost*0.02+cabPerk(g,"medical"); // APPT: CalHHS operator slows the churn
   if(M.mode==="trough"||M.mode==="correction"){mcDrift+=TUNING.MC_RECESSION;
     g.fiscal.deficit+=0.04; // CalFresh & caseload costs ride along
     if(!g.flags.mcRecessionNoted&&M.mode==="trough"){g.flags.mcRecessionNoted=true;
@@ -1513,12 +1633,15 @@ function driftIssues(g,d){
         "Medi-Cal enrollment is rising against the H.R.1 decline curve — every layoff feeds the caseload the federal law was shrinking. The cruel interaction, in one sentence: Washington cut the program's funding on the assumption of good times, and the times stopped being good. The state pays the difference, which is to say: you do.");}}
   I.mediCal=clamp(I.mediCal+mcDrift,11.5,15.2);
   I.medicalBoost=Math.max(0,I.medicalBoost-0.02);
-  // prison: Prop 36 upward drift minus relief
-  I.prison=clamp(I.prison+0.22-(I.prisonRelief*0.09)+RNG.norm(0,0.15),100,150);
+  // prison: Prop 36 upward drift minus relief — APPT: the CDCR secretary's population plans count monthly
+  I.prison=clamp(I.prison+TUNING.PRISON_DRIFT-(I.prisonRelief*0.09)-cabPerk(g,"prison")+RNG.norm(0,0.15),100,150);
   I.prisonRelief=Math.max(0,I.prisonRelief-0.02);
   // insurance stability
   I.insur=clamp(I.insur+clamp(I.insurBoost*0.22,0,3.2)-0.1,0,100); // MECH-5: big fixes now beat small ones
   I.insurBoost=Math.max(0,I.insurBoost-0.35);
+  // grid: data-center & electrification demand growth erodes the planning margin every month;
+  // procurement EOs and a CalEPA secretary who moves the permit queue (APPT perk) push back
+  I.grid=clamp(I.grid-0.06+cabPerk(g,"grid"),5,30);
   // fire acres reset in Jan
   if(d.m===1)I.fireYtd=0;
 }
@@ -1734,7 +1857,8 @@ const BUDGET_MIXES=[
 ];
 /* Live preview math shared by the builder UI and the engine — one source of truth. */
 function budgetPreview(g,mx){
-  const cred=mx.cuts+mx.taxes*0.9+mx.reserves*0.8+mx.gimmicks*0.35;
+  const dofCred=cabPerk(g,"budget"); // APPT: a Finance director the LAO trusts makes the same numbers read better
+  const cred=mx.cuts+mx.taxes*0.9+mx.reserves*0.8+mx.gimmicks*0.35+dofCred;
   const claimed=mx.cuts+mx.taxes+mx.reserves+mx.gimmicks+mx.rosy;
   const ratio=cred/Math.max(g.fiscal.deficit,1);
   let label,ap;
@@ -1749,7 +1873,7 @@ function budgetPreview(g,mx){
   if(mx.gimmicks>=4)costs.push("new Prop 98 deferral → lawsuit, CTA betrayal");
   if(mx.rosy>=8)costs.push("LAO credibility loss; May Revision reckoning");
   if(mx.reserves>0)costs.push("SFEU drawdown (one-time money, annual problem)");
-  return {cred,claimed,ratio,label,ap,costs};
+  return {cred,claimed,ratio,label,ap,costs,dofCred};
 }
 function proposeBudget(g,mx,templateNm){
   const B=g.fiscal.budget,y=turnDate(g.turn).y;
@@ -1980,10 +2104,10 @@ function randomEvents(g,d){
   const m=d.m,I=g.issues;
   // Wildfire season Jun–Oct
   if(m>=6&&m<=10&&!g.flags.disasterActive){
-    if(RNG.chance(0.035)){ // catastrophic (LA-2025 scale)
+    if(RNG.chance(0.035)){ // catastrophic (LA-2025 scale) — APPT: a fire-siege-tested CNRA secretary shaves the fiscal wound
       g.flags.disasterActive={type:"fire",sev:3,turn:g.turn};
       I.fireYtd+=RNG.int(600,1100); I.insur=clamp(I.insur-9,0,100);
-      g.fiscal.deficit+=1.2;
+      g.fiscal.deficit+=Math.max(0.5,1.2-cabPerk(g,"fire"));
       cov(g,"AP","Catastrophic wind-driven fire complex — thousands of structures",
         "A January-2025-scale event: urban conflagration, mass evacuations, a death toll that will rise for a week. The cameras are already asking where the governor is. DECLARE EMERGENCY unlocks the response machinery; how you run it is the whole story now.");
       dAp(g,-2); inbox(g,"CATASTROPHIC FIRE — Declare emergency & manage response (actions available)","NOW");
@@ -2042,8 +2166,8 @@ function randomEvents(g,d){
     else{cov(g,"Politico","Federal audit letter targets state spending",
       "A federal IG wants receipts on pandemic-era dollars. Nothing improper has been found; the story is the letter, not the finding. It always is.");}
   }
-  // Scandal — R2: cabinet quality is the vetting operation
-  let scP=TUNING.SCANDAL_P+(g.player.bg==="media"&&g.turn<=12?0.03:0)+(2-avgCabinetQ(g))*0.012;
+  // Scandal — R2: cabinet quality is the vetting operation; APPT: a GovOps auditor lowers the base rate directly
+  let scP=Math.max(0.004,TUNING.SCANDAL_P+(g.player.bg==="media"&&g.turn<=12?0.03:0)+(2-avgCabinetQ(g))*0.012-cabPerk(g,"vetting"));
   if(RNG.chance(scP)){
     g.flags.scandalCount++;dAp(g,-3.5);spendPC(g,6);
     const confirmed=g.cabinet.filter(c=>!c.pending&&c.type!=="caretaker");
@@ -2116,9 +2240,9 @@ function randomEvents(g,d){
       ["On the phrase 'the governor's budget'","It appears in the Constitution, in the style guides, and on the cover of the January document, and it is a courtesy title at best. The governor proposes in January; the subcommittees disassemble in spring; the May Revision concedes what April's receipts insisted on; and the June package is negotiated by three people in a room, only one of whom faces the voters statewide. What survives of January by June is called, generously, the framework. Budget staff keep a private statistic — the January-to-enactment survival rate of the governor's specific proposals — and do not share it with the front office, on humanitarian grounds."]]);
     cov(g,"CalMatters","Capitol Notebook: "+nb[0],nb[1]);
   }
-  // strike risk
+  // strike risk — APPT: who runs LWDA changes whether the walkout threat gets a phone call or a press release
   for(const u of ["seiu","cta"]){
-    if(g.actors[u]<=-55&&RNG.chance(0.06)){
+    if(g.actors[u]<=-55&&RNG.chance(Math.max(0.015,0.06-cabPerk(g,"strike")))){
       if(g.player.bg==="labor"&&g.flags.laborPeaceY!==d.y){
         g.flags.laborPeaceY=d.y;
         cov(g,"Politico","Strike averted — the old network holds",
@@ -2354,11 +2478,13 @@ const ACTIONS=[
     const slots=cabinetVacancies(g).concat(g.cabinet.filter(c=>c.type==="caretaker").map(c=>[c.agency,c.agencyFull]));
     const out=[];
     for(const [code,full] of slots.slice(0,3)){
-      const i=AGENCIES.findIndex(a=>a[0]===code);
-      out.push({id:code+":ally",nm:`${full}: ${candName(i,"ally")}, a caucus ally`,
-        d:"A termed-out legislator with friends in Rules. Confirms instantly (★★); the Legislature banks the favor and a chair owes you a committee courtesy.",cost:"+leg standing"},
-      {id:code+":reformer",nm:`${full}: ${candName(i,"reformer")}, an outside reformer`,
-        d:"A theory-of-change hire. Senate Rules gets ~2 months and, in practice, a veto — ★★★ if it lands, a public collapse if it doesn't.",cost:"confirmation risk (INS)"});}
+      const ally=cabCand(code,"ally"),ref=cabCand(code,"reformer");
+      out.push({id:code+":ally",nm:`${full}: ${ally.nm} — ${ally.tag}`,
+        d:`${ally.bio} Confirms instantly (★★); the Legislature banks the favor and a chair owes you a committee courtesy. WEIGHT: ${perkDesc(ally.perk)}.`,
+        cost:"+leg standing"+(candFxSummary(ally.fx)?" · "+candFxSummary(ally.fx):"")},
+      {id:code+":reformer",nm:`${full}: ${ref.nm} — ${ref.tag}`,
+        d:`${ref.bio} Senate Rules gets ~2 months and, in practice, a veto — ★★★ if it lands, a public collapse if it doesn't. WEIGHT: ${perkDesc(ref.perk)}.`,
+        cost:(ref.risk>0.03?"HIGH confirmation risk (INS)":ref.risk<0?"LOW confirmation risk (INS)":"confirmation risk (INS)")+(candFxSummary(ref.fx)?" · "+candFxSummary(ref.fx):"")});}
     return out;},
   run:(g,c)=>{const [code,type]=c.split(":");
     g.cabinet=g.cabinet.filter(x=>!(x.agency===code&&x.type==="caretaker")); // a real nominee replaces the caretaker
@@ -2693,10 +2819,11 @@ LAG_FNS._clearEmergency=g=>{g.flags.emergency=null;};
 LAG_FNS._confirm=(g,fx)=>{
   const c=g.cabinet.find(x=>x.agency===fx.code&&x.pending);if(!c)return;
   const slow=g.player.party==="R"?0.15:0; // a Democratic Senate Rules Committee reads Republican nominees slowly
-  const r=roll(g,"INS",(g.player.bg==="media"?0.25:0.1)+slow,0);
+  const r=roll(g,"INS",(g.player.bg==="media"?0.25:0.1)+slow+(c.risk||0),0); // APPT-3: the résumé itself has a Rules price
   if(r.ok){c.pending=false;dAp(g,0.5);
+    if(c.fx)for(const[id,d]of Object.entries(c.fx))dAct(g,id,d); // the constituencies react when the outsider is actually seated
     cov(g,"CalMatters",`${c.nm} confirmed to ${c.agencyFull}`,
-      "The outsider survived Senate Rules — months of chits and courtesy calls, but the signal landed: this administration hires on theory of change, not seniority. A ★★★ operator is now inside the machine, and every operational roll runs slightly better for it.");}
+      `The outsider — ${c.tag||"a theory-of-change hire"} — survived Senate Rules: months of chits and courtesy calls, but the signal landed. ${c.bio||""} A ★★★ operator is now inside the machine${c.perk?", and the résumé starts working immediately ("+perkDesc(c.perk)+")":""}.`);}
   else{g.cabinet=g.cabinet.filter(x=>x!==c);dAp(g,-1.5);spendPC(g,3);
     cov(g,"Politico",`Confirmation collapses: ${c.nm} withdraws from ${c.agencyFull}`,
       (g.player.bg==="media"?"The vetting file was thin because your bench is thin — NO BENCH, priced mechanically. ":"")+
@@ -2738,15 +2865,16 @@ ACTIONS.push({id:"hsrpush",nm:"Advance High-Speed Rail",cat:"Political",slots:1,
     return true;},
   choices:g=>{const st=g.issues.hsrStage;
     if(st===0)return [{id:"court",nm:"Court private capital — personally",
-      d:"Calls to pension funds, dinner with a sovereign fund, the cap-and-invest stream ($1B/yr through 2045) offered as collateral with your credibility attached. COA-based; odds improve with every serious attempt.",
-      cost:g.flags.hsrTried?g.flags.hsrTried+" prior attempt(s) — the investors know you're serious":"First approach"}];
+      d:"Calls to pension funds, dinner with a sovereign fund, the cap-and-invest stream ($1B/yr through 2045) offered as collateral with your credibility attached. COA-based; odds improve with every serious attempt."+(cabPerk(g,"hsr")>=0.1?" Your CalSTA secretary knows these investors by first name — the odds show it.":""),
+      cost:(g.flags.hsrTried?g.flags.hsrTried+" prior attempt(s) — the investors know you're serious":"First approach")+(cabPerk(g,"hsr")?" · CalSTA +"+Math.round(cabPerk(g,"hsr")*100)+"%":"")}];
     if(st===1)return [{id:"lock",nm:"Lock the cap-and-invest collateral (budget season)",
       d:"Write the pledge into the budget package so no future Legislature can quietly redirect the stream. CalChamber will call it a generation of climate money spent on one train. It will pass anyway if your standing holds.",cost:"PC 4 total · chamber −4"}];
     return [{id:"fund",nm:"Fund the Merced–Bakersfield operating segment",
       d:"The last mile is money: rolling stock, electrification completion, an operating subsidy. +$0.5B/yr to the deficit, +10 with the Trades, and a train Californians can actually board. This is the promise, kept — by choosing to pay for it.",cost:"PC 8 total · deficit +$0.5B/yr"}];},
   run:(g,c)=>{
     if(c==="court"){g.flags.hsrTried++;
-      const r=roll(g,"COA",0.28-g.flags.hsrTried*0.06,(g.actors.trades)/300+(g.player.attrs.FED-5)*0.015);
+      const r=roll(g,"COA",0.28-g.flags.hsrTried*0.06,(g.actors.trades)/300+(g.player.attrs.FED-5)*0.015+cabPerk(g,"hsr")); // APPT: CalSTA's rolodex
+
       if(r.ok){hsrSetStage(g,1);dAct(g,"trades",10);
         cov(g,"AP","High-speed rail lands its private capital — because the governor went and got it",
           "A consortium — pension funds, a sovereign fund nobody wants to name, and the cap-and-invest revenue stream as collateral — closed the Merced–Bakersfield financing after "+g.flags.hsrTried+" round"+(g.flags.hsrTried>1?"s":"")+" of personal courtship from the horseshoe. Term sheets do not sign themselves; this one has your fingerprints on every page. Next: the collateral is a promise until it's locked in a budget.");}
@@ -3145,7 +3273,7 @@ function politicalPanel(g){
     ${g.flags.recallPressure>0?`<div class="kv"><span class="k">Recall pressure</span><span class="v bad">${g.flags.recallPressure}/100</span></div>`:""}
     ${g.flags.jobKiller?`<div class="subtle" style="color:var(--serious)">⚠ CalChamber "job killer" campaign active (−2 approval drift)</div>`:""}
     ${camps.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">⚔ CAMPAIGNS RUNNING AGAINST YOU</div>${camps.map(([id,c])=>`<div class="kv"><span class="k" style="color:var(--serious)">${ACTORS.find(a=>a.id===id).nm}</span><span class="v" style="font-size:10px;white-space:normal">${c.nm} · since ${turnDate(c.since).label}</span></div>`).join("")}`:""}
-    ${g.cabinet.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">CABINET (quality moves every operational roll · vacancies count as acting deputies)</div>${g.cabinet.map(c=>`<div class="kv"><span class="k">${seal(c.agency.slice(0,2),c.agency)}${c.nm} · ${c.agency}${c.pending?' <span class="pill" style="color:var(--warn);border-color:var(--warn);font-size:8px">RULES</span>':c.type==="caretaker"?' <span class="pill" style="color:var(--serious);border-color:var(--serious);font-size:8px">CARETAKER</span>':""}</span><span class="v" style="color:var(--yellow)">${"★".repeat(c.q)}</span></div>`).join("")}
+    ${g.cabinet.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">CABINET (quality moves every operational roll · backgrounds carry weight · hover for the résumé)</div>${g.cabinet.map(c=>`<div class="kv"><span class="k" ${c.bio?`style="cursor:help" title="${esc((c.tag?c.tag+" — ":"")+c.bio)}${c.perk?esc(" · WEIGHT: "+perkDesc(c.perk))+(c.pending?" (inert until confirmed)":c.type==="caretaker"?" (inert — caretaker)":""):""}"`:""}>${seal(c.agency.slice(0,2),c.agency)}${c.nm} · ${c.agency}${c.tag?` <span class="subtle" style="font-size:9.5px">${esc(c.tag.split("—")[0].trim())}</span>`:""}${c.pending?' <span class="pill" style="color:var(--warn);border-color:var(--warn);font-size:8px">RULES</span>':c.type==="caretaker"?' <span class="pill" style="color:var(--serious);border-color:var(--serious);font-size:8px">CARETAKER</span>':""}</span><span class="v" style="color:var(--yellow)">${"★".repeat(c.q)}</span></div>`).join("")}
     ${cabinetVacancies(g).length?`<div class="kv"><span class="k" style="color:var(--serious)">VACANT: ${cabinetVacancies(g).map(v=>v[0]).join(", ")}</span><span class="v" style="color:var(--serious)">★½ acting</span></div>`:""}`:""}
     <div class="hr"></div>
     <details class="acc" data-key="groups" ${UI.open.groups?"open":""}><summary>Approval by group (${g.approval.toFixed(0)}% overall)</summary>
@@ -3259,14 +3387,23 @@ function transitionPanel(g){
   const monthsLeft=Math.max(0,3-g.turn+1);
   return `<div class="setpiece"><h3>🏛 THE TRANSITION — staff the administration (${filled.length}/9 seated${pending.length?", "+pending.length+" before Senate Rules":""})</h3>
   <p class="subtle">Every governor's first real act: naming the people who actually run the 227,500-person executive branch. Free during the transition — no action slots. ${monthsLeft} month${monthsLeft===1?"":"s"} until unfilled posts get caretakers (★, and every operational roll feels it).</p>
-  ${vac.map(([code,full])=>{const i=AGENCIES.findIndex(a=>a[0]===code);
+  ${vac.map(([code,full])=>{
+    const noBench=g.player.bg==="media";
+    const btn=(cand)=>{
+      const q=Math.max(1,cand.q-(noBench?1:0));
+      const label=cand.type==="holdover"?"holdover":cand.type==="ally"?"caucus ally":"reformer";
+      const typeNote=cand.type==="holdover"?"Confirms instantly; owes you nothing.":cand.type==="ally"?"Confirms instantly; the Legislature banks the favor (+leg standing, committee chit).":"Senate Rules gets ~2 months and, in practice, a veto — the résumé works only if it survives the hearing.";
+      const riskNote=cand.type==="reformer"?(cand.risk>0.03?" This résumé makes enemies before it makes a difference — Rules risk runs HIGH.":cand.risk<0?" Rules confirms this résumé with something close to relief — risk runs LOW.":""):"";
+      const fxs=candFxSummary(cand.fx);
+      return `<button class="tcand" data-act="appointpick" data-ag="${code}" data-c="${cand.type}" title="${esc(cand.bio)} ${typeNote}${riskNote}">
+        <span class="tc-nm">${cand.nm} · ${label} ${"★".repeat(q)}</span>
+        <span class="tc-tag">${esc(cand.tag)}</span>
+        <span class="tc-wt">${perkDesc(cand.perk)}${fxs?` <span class="tc-fx">${fxs}</span>`:""}</span>
+        ${cand.type==="reformer"?`<span class="risk">${cand.risk>0.03?"HIGH RULES RISK":cand.risk<0?"LOW RULES RISK":"RULES RISK"}</span>`:""}
+      </button>`;};
     return `<div class="trow"><div class="trow-h">${seal(code.slice(0,2),code)}<b>${full}</b> <span class="subtle num">${code}</span></div>
-    <div class="trow-opts">
-      <button class="tcand" data-act="appointpick" data-ag="${code}" data-c="holdover" title="Kept from the last administration. Confirms instantly, knows the building, owes you nothing.">${candName(i,"holdover")} · holdover ★★</button>
-      <button class="tcand" data-act="appointpick" data-ag="${code}" data-c="ally" title="A termed-out legislator with friends in Rules. Confirms instantly; the Legislature banks the favor (+leg standing, committee chit).">${candName(i,"ally")} · caucus ally ★★</button>
-      <button class="tcand" data-act="appointpick" data-ag="${code}" data-c="reformer" title="Theory-of-change hire. Senate Rules gets ~2 months and, in practice, a veto — ★★★ if confirmed, a public collapse if not.">${candName(i,"reformer")} · reformer ★★★<span class="risk">RULES RISK</span></button>
-    </div></div>`;}).join("")}
-  ${pending.map(c=>`<div class="trow pendrow"><div class="trow-h">${seal(c.agency.slice(0,2),c.agency)}<b>${c.agencyFull}</b> — ${c.nm} <span class="pill" style="color:var(--warn);border-color:var(--warn)">AWAITING SENATE RULES</span></div></div>`).join("")}
+    <div class="trow-opts">${CAB_CANDIDATES[code].map(btn).join("")}</div></div>`;}).join("")}
+  ${pending.map(c=>`<div class="trow pendrow"><div class="trow-h">${seal(c.agency.slice(0,2),c.agency)}<b>${c.agencyFull}</b> — ${c.nm}${c.tag?` <span class="subtle">(${esc(c.tag)})</span>`:""} <span class="pill" style="color:var(--warn);border-color:var(--warn)">AWAITING SENATE RULES</span></div></div>`).join("")}
   </div>`;
 }
 /* F1: situation card */
@@ -3420,7 +3557,7 @@ function builderModal(g){
 function builderPreviewHTML(g,mx){
   const pv=budgetPreview(g,mx);
   return `<div class="kv"><span class="k">Claimed solutions</span><span class="v">${fmtB(pv.claimed,0)} of ${fmtB(g.fiscal.deficit,1)}</span></div>
-  <div class="kv"><span class="k">LAO-credible portion</span><span class="v ${pv.ratio>0.55?"good":pv.ratio>0.3?"warn":"bad"}">${fmtB(pv.cred,1)}</span></div>
+  <div class="kv"><span class="k">LAO-credible portion${pv.dofCred?` <span class="subtle">(incl. +${fmtB(pv.dofCred)} — your Finance director's word is worth money)</span>`:""}</span><span class="v ${pv.ratio>0.55?"good":pv.ratio>0.3?"warn":"bad"}">${fmtB(pv.cred,1)}</span></div>
   <div class="kv"><span class="k">Projected LAO grade</span><span class="v">${pv.label}</span></div>
   <div class="subtle" style="margin-top:4px">CONSTITUENCY INVOICES: ${pv.costs.length?pv.costs.join(" · "):"remarkably few — check your arithmetic"}</div>`;
 }
