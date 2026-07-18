@@ -366,6 +366,16 @@
   .tcand .tc-tag{display:block; color:var(--ink2); font-size:10.5px; font-style:italic; margin-top:1px;}
   .tcand .tc-wt{display:block; font-family:var(--mono); font-size:9px; color:var(--yellow); margin-top:3px; letter-spacing:.02em; white-space:normal;}
   .tcand .tc-fx{color:var(--muted);}
+
+  /* bill tracker */
+  .lt-row{border-top:1px dotted var(--grid); padding:6px 0 5px;}
+  .lt-hd{font-size:12px; color:var(--ink);}
+  .lt-stages{display:flex; align-items:center; flex-wrap:wrap; gap:2px; margin:4px 0 3px;}
+  .lt-st{font-family:var(--mono); font-size:8.5px; letter-spacing:.05em; text-transform:uppercase; padding:2px 6px; border-radius:3px; background:var(--surface3); color:var(--muted); white-space:nowrap;}
+  .lt-st.done{color:#7ecdb4; background:#0e2420;}
+  .lt-st.now{color:#0d0d0d; background:var(--yellow); font-weight:700;}
+  .lt-arrow{color:var(--baseline); font-size:9px; padding:0 1px;}
+  .lt-meta{font-size:10.5px; color:var(--ink2); padding:1px 0;}
   .pendrow{opacity:.8;}
 
   /* ---- chart explorer & HSR tracker ---- */
@@ -782,14 +792,135 @@ const BILL_POOL=[
   backers:["hosp","seiu","progs"],opps:["mods","gop"],
   sign:{act:{hosp:14,seiu:10,progs:12,mods:-8},ap:1,gf:-2.4,issue:{medicalBoost:0.6},promise:"protect_medical"},
   veto:{act:{hosp:-12,seiu:-10,progs:-12},ap:0}},
-];
-/* Sponsorable topics shown in the action UI */
-const SPONSOR_TOPICS=[
- ["saas","Repeal the software tax","b_saas_repeal"],["housing","Housing preemption / streamlining","b_upzone"],
- ["insurance","Insurance market stabilization","b_insur"],["homeless","Homelessness accountability","b_audit"],
- ["health","Medi-Cal H.R.1 backfill","b_medbackfill"],["justice","Sentencing-credit expansion","b_credits"],
- ["water","Water storage & conveyance","b_water"],["pension","New-hire pension tier","b_pension"],
- ["ceqa","CEQA infill exemption","b_ceqa"],["tax","Fair Share employer penalty (2/3)","b_fairshare"],
+ /* ---- LEG-1: the 2027 session's deeper bench (yr defaults to 2027) ---- */
+ {id:"b_adu",num:"AB 1033-B",t:"ADU Financing & Amnesty Act",topic:"housing",
+  d:"State-backed ADU construction loans plus amnesty for unpermitted units brought to code.",
+  backers:["yimby","localgov"],opps:["tenants"],
+  sign:{act:{yimby:8,localgov:6,tenants:-4},ap:1,gf:-0.2,issue:{housingBoost:6}},
+  veto:{act:{yimby:-10,localgov:-4},ap:0}},
+ {id:"b_beds",num:"SB 43-B",t:"Behavioral Health Beds Acceleration",topic:"homeless",
+  d:"Fast-tracks Prop 1 bond spending into locked subacute and board-and-care capacity.",
+  backers:["mayors","hosp","mods"],opps:["progs"],
+  sign:{act:{mayors:8,hosp:6,progs:-5},ap:1,gf:-0.4,issue:{homelessBoost:4}},
+  veto:{act:{mayors:-8,hosp:-5},ap:-1}},
+ {id:"b_storage",num:"SB 233-B",t:"Grid Storage Procurement Acceleration",topic:"energy",
+  d:"Orders CPUC-jurisdictional procurement of 4 GW of storage on a statutory clock.",
+  backers:["enviro","trades"],opps:["energy"],
+  sign:{act:{enviro:6,trades:5,energy:-6},ap:0,gf:-0.15,issue:{grid:2}},
+  veto:{act:{enviro:-6,trades:-4,energy:5},ap:0}},
+ {id:"b_harden",num:"AB 38-B",t:"Home Hardening Revolving Fund",topic:"insurance",
+  d:"Low-interest retrofit loans in fire zones; hardened homes get mandatory insurance discounts.",
+  backers:["localgov","energy"],opps:[],
+  sign:{act:{localgov:6,energy:4},ap:1,gf:-0.25,issue:{insurBoost:8}},
+  veto:{act:{localgov:-5},ap:-1}},
+ {id:"b_fentanyl",num:"AB 2115",t:"Fentanyl Interdiction & Treatment Act",topic:"justice",
+  d:"Port-of-entry interdiction money paired with treatment-on-demand pilots in eight counties.",
+  backers:["gop","mods","mayors"],opps:[],
+  sign:{act:{gop:6,mods:6,mayors:4,progs:-3},ap:2,gf:-0.3},
+  veto:{act:{gop:-8,mods:-6},ap:-2}},
+ {id:"b_transit",num:"SB 125-B",t:"Transit Operations Rescue",topic:"transport",
+  d:"Bridges the fiscal cliff for BART, Muni and LA Metro operations — with farebox-recovery strings.",
+  backers:["trades","progs","mayors"],opps:["mods","gop"],
+  sign:{act:{trades:6,progs:8,mayors:6,mods:-5},ap:0,gf:-0.9},
+  veto:{act:{trades:-6,progs:-10,mayors:-8},ap:0}},
+ {id:"b_teachers",num:"AB 520",t:"Teacher Pipeline & Residency Act",topic:"education",
+  d:"Paid residencies and credential-cost waivers against the 10,000-teacher shortfall.",
+  backers:["cta","cft"],opps:[],
+  sign:{act:{cta:8,cft:8},ap:1,gf:-0.4},
+  veto:{act:{cta:-10,cft:-8},ap:-1}},
+ {id:"b_smallbiz",num:"SB 1200",t:"Small Business Regulatory Relief",topic:"economy",legOnly:true,
+  d:"Streamlined licensing, PAGA settlement caps for first violations, and a one-stop permit portal.",
+  backers:["chamber","mods","gop"],opps:["caoc","seiu"],
+  sign:{act:{chamber:10,mods:6,caoc:-8,seiu:-4},ap:1,gf:0},
+  veto:{act:{chamber:-10,mods:-5,caoc:6},ap:-1}},
+ /* ---- LEG-1: 2028 — an election-year session legislates for the cameras ---- */
+ {id:"b_kidsocial",num:"AB 56-B",t:"Kids' Social Media Safeguards",topic:"tech",yr:2028,legOnly:true,
+  d:"Default-off algorithmic feeds and night-hours notification bans for minors. Platforms will sue by Friday.",
+  backers:["progs","mods","gop"],opps:["tech"],
+  sign:{act:{progs:5,mods:5,gop:4,tech:-10},ap:2,gf:0},
+  veto:{act:{tech:8,progs:-6,mods:-5},ap:-2}},
+ {id:"b_theft",num:"AB 1990",t:"Retail Theft Enforcement Package",topic:"justice",yr:2028,legOnly:true,
+  d:"Aggregation of serial thefts, felony thresholds revisited, and organized-retail-crime task forces. The Prop 36 electorate is watching.",
+  backers:["gop","mods","chamber","ccpoa"],opps:["progs"],
+  sign:{act:{gop:8,mods:6,chamber:5,ccpoa:5,progs:-8},ap:2,gf:-0.2,issue:{prisonRelief:-2}},
+  veto:{act:{gop:-10,mods:-8,chamber:-5,progs:8},ap:-2.5}},
+ {id:"b_registry",num:"AB 1482-C",t:"Statewide Rent Registry",topic:"tenants",yr:2028,
+  d:"Every landlord over 4 units reports rents annually; enforcement data for the caps already on the books.",
+  backers:["tenants","progs"],opps:["chamber"],
+  sign:{act:{tenants:10,progs:6,chamber:-6},ap:0,gf:-0.05},
+  veto:{act:{tenants:-12,progs:-6,chamber:5},ap:0}},
+ {id:"b_chargers",num:"SB 400-B",t:"EV Charger Buildout Standards",topic:"energy",yr:2028,legOnly:true,
+  d:"Right-to-charge in rentals, streamlined utility interconnection, reliability standards for public chargers.",
+  backers:["enviro","tech"],opps:["energy"],
+  sign:{act:{enviro:5,tech:4,energy:-4},ap:0,gf:-0.1,issue:{grid:-1}},
+  veto:{act:{enviro:-6,tech:-4},ap:0}},
+ {id:"b_insulin",num:"SB 90-B",t:"Insulin & Inhaler Cost Cap Expansion",topic:"health",yr:2028,legOnly:true,
+  d:"Caps out-of-pocket costs at $35 across all state-regulated plans; CalRx gets first-buyer status.",
+  backers:["progs","hosp"],opps:["chamber"],
+  sign:{act:{progs:6,hosp:4,chamber:-4},ap:2,gf:-0.1},
+  veto:{act:{progs:-8,hosp:-4},ap:-2}},
+ {id:"b_waterrights",num:"SB 1372",t:"Water Rights Modernization Act",topic:"water",yr:2028,
+  d:"Brings pre-1914 water rights under state measurement and curtailment authority. A century of quiet ends loudly.",
+  backers:["enviro"],opps:["agri","water"],
+  sign:{act:{enviro:12,agri:-14,water:-14},ap:0,gf:0.1},
+  veto:{act:{enviro:-12,agri:10,water:10},ap:0}},
+ {id:"b_close",num:"AB 333-B",t:"Prison Closure Authorization",topic:"justice",yr:2028,
+  d:"Authorizes closing two more prisons as population falls — $0.5B/yr once vacated. CCPOA calls it 'abandonment.'",
+  backers:["progs","mods"],opps:["ccpoa","gop"],
+  sign:{act:{progs:8,mods:4,ccpoa:-12,gop:-6},ap:-0.5,gf:0.5,issue:{prisonRelief:2}},
+  veto:{act:{progs:-8,ccpoa:8},ap:0}},
+ /* ---- LEG-1: 2029 — the post-election session swings for legacy ---- */
+ {id:"b_calcare",num:"AB 1400-B",t:"CalCare Financing & Feasibility Act",topic:"health",yr:2029,needs23:true,
+  d:"The single-payer bill, back again — this time with the financing amendment attached (~$12B first-phase, 2/3 vote).",
+  backers:["progs","seiu","cft"],opps:["chamber","hosp","mods","gop"],
+  sign:{act:{progs:16,seiu:12,cft:8,chamber:-16,hosp:-10,mods:-10},ap:-1,gf:-3.0,tax:true,issue:{medicalBoost:0.5}},
+  veto:{act:{progs:-18,seiu:-14,cft:-8,chamber:12,mods:8},ap:1}},
+ {id:"b_socialhousing",num:"SB 555-B",t:"Social Housing Authority Act",topic:"housing",yr:2029,
+  d:"A state developer of mixed-income housing on public land — the Vienna model, Sacramento edition.",
+  backers:["progs","tenants","yimby"],opps:["chamber","localgov"],
+  sign:{act:{progs:10,tenants:8,yimby:6,chamber:-6,localgov:-5},ap:0,gf:-0.6,issue:{housingBoost:8}},
+  veto:{act:{progs:-10,tenants:-8,yimby:-6},ap:0}},
+ {id:"b_ceqa_courts",num:"SB 607-C",t:"CEQA Judicial Streamlining",topic:"housing",yr:2029,
+  d:"270-day court deadlines for CEQA challenges to housing and clean energy; loser-pays for serial litigants.",
+  backers:["yimby","chamber","trades"],opps:["enviro","caoc"],
+  sign:{act:{yimby:10,chamber:8,trades:6,enviro:-12,caoc:-8},ap:0,gf:0,issue:{housingBoost:8}},
+  veto:{act:{yimby:-10,chamber:-8,enviro:10},ap:0}},
+ {id:"b_prek",num:"AB 22-B",t:"Universal Pre-K Completion Act",topic:"education",yr:2029,
+  d:"Closes the last age-3 gap in transitional kindergarten and funds facilities to match.",
+  backers:["cta","progs"],opps:["mods"],
+  sign:{act:{cta:10,progs:8,mods:-4},ap:1,gf:-0.8},
+  veto:{act:{cta:-12,progs:-8},ap:-1}},
+ {id:"b_opeb",num:"SB 13-C",t:"Retiree Health Prefunding Act",topic:"pension",yr:2029,
+  d:"Mandatory OPEB prefunding on the CalPERS model — boring, compounding, and forty years overdue.",
+  backers:["chamber","mods"],opps:["seiu","ccpoa"],
+  sign:{act:{chamber:8,mods:6,seiu:-8,ccpoa:-6},ap:0,gf:0.3,issue:{pensionCut:4}},
+  veto:{act:{chamber:-8,mods:-4,seiu:6},ap:0}},
+ {id:"b_broadband",num:"AB 717",t:"Middle-Mile Broadband Completion",topic:"economy",yr:2029,legOnly:true,
+  d:"Finishes the state's open-access fiber backbone through the valleys the carriers skipped.",
+  backers:["progs","agri","localgov"],opps:[],
+  sign:{act:{progs:4,agri:5,localgov:5},ap:1,gf:-0.35},
+  veto:{act:{agri:-5,localgov:-5},ap:-1}},
+ /* ---- LEG-1: 2030 — a reelection-year session hands you grenades ---- */
+ {id:"b_rebate",num:"AB 1-B",t:"Cost-of-Living Rebate Act",topic:"economy",yr:2030,legOnly:true,
+  d:"$400 per filer in an election year, paid from a reserve you may or may not have. The Legislature dares you to veto it.",
+  backers:["progs","mods","gop"],opps:[],
+  sign:{act:{progs:5,mods:5,gop:3},ap:3,gf:-1.2},
+  veto:{act:{progs:-8,mods:-8,gop:-4},ap:-3}},
+ {id:"b_backstop",num:"SB 1060",t:"Disaster Insurance Backstop Authority",topic:"insurance",yr:2030,
+  d:"A state catastrophe reinsurance backstop behind the FAIR Plan — the structural fix the 2025 crisis demanded.",
+  backers:["energy","localgov","mods"],opps:["caoc"],
+  sign:{act:{energy:8,localgov:8,mods:5,caoc:-6},ap:1,gf:-0.5,issue:{insurBoost:16}},
+  veto:{act:{energy:-8,localgov:-8},ap:-1.5}},
+ {id:"b_remedy2030",num:"AB 2011-B",t:"Builder's Remedy Codification",topic:"housing",yr:2030,
+  d:"Locks the builder's remedy into clean statute with ministerial approval timelines. Cities' worst Tuesday.",
+  backers:["yimby","trades","chamber"],opps:["localgov","mayors"],
+  sign:{act:{yimby:12,trades:6,chamber:5,localgov:-12,mayors:-6},ap:0,gf:0,issue:{housingBoost:10}},
+  veto:{act:{yimby:-14,trades:-6,localgov:8,mayors:5},ap:0}},
+ {id:"b_ai2030",num:"SB 12-B",t:"Frontier Model Incident Reporting",topic:"tech",yr:2030,legOnly:true,
+  d:"Mandatory 72-hour incident disclosure for frontier AI failures, modeled on breach-notification law.",
+  backers:["progs","caoc"],opps:["tech","chamber"],
+  sign:{act:{progs:6,caoc:5,tech:-8,chamber:-4},ap:0,gf:0},
+  veto:{act:{progs:-6,tech:6,chamber:4},ap:0}},
 ];
 
 /* ===================== 8. BALLOT MEASURES (player-qualified) ===================== */
@@ -1155,7 +1286,7 @@ function newGame(cfg){
       housingRate:9.2, housingCum:0, hsr:"seeking private capital", hsrStage:0, k12:BASELINE.k12_enroll.v,
       homelessBoost:0, housingBoost:0, insurBoost:0, medicalBoost:0, prisonRelief:0},
     actors:{}, leg:{senD:30,senR:10,asmD:60,asmR:19}, legStanding:0,
-    bills:{pipeline:[], desk:[], signed:[], vetoed:[], enactedIds:[]},
+    bills:{pipeline:[], desk:[], signed:[], vetoed:[], enactedIds:[], deadSess:{}, outcomeLog:[]},
     measures:{pending:[], hostile:[]},
     cabinet:[], campaigns:{}, pendingCard:null, cardHist:[],
     markers:{homeless:[],housing:[],insur:[],medical:[],grid:[]}, landedLog:[], rollLog:[],
@@ -1540,12 +1671,12 @@ function endMonth(g){
   }
   // 2b. MISS-4: urgency bills get monthly floor votes — 2/3 for immediate effect, no waiting for August
   for(const b of g.bills.pipeline.filter(x=>x.urgent&&x.stage==="floor")){
-    const v=voteModel(g,true,{});
+    const v=voteModel(g,true,{bonusSeats:b.whip||0}); // LEG-3: whipped votes count monthly too
     if(v.asm>=54&&v.sen>=27){b.stage="passed";b.floorVotes=v;g.bills.desk.push(b);
       cov(g,"AP",`URGENCY: ${b.num} clears two-thirds — ${v.asm}–${79-v.asm}, ${v.sen}–${40-v.sen}`,
         `An urgency statute takes effect the moment it's signed — no waiting for January 1. The price is the supermajority you just spent: 54 and 27, counted in public. ${b.t} is on your desk NOW, and its effects follow within weeks, not quarters.`);}
     else{b.urgentTries=(b.urgentTries||0)+1;
-      if(b.urgentTries>=3){b.stage="dead";
+      if(b.urgentTries>=3){billDied(g,b,"urgency failed 3×");
         cov(g,"Politico",`${b.num} gives up on urgency — ${v.asm} of 54`,
           `Three floor runs at two-thirds, three misses. The urgency clause comes off and the bill dies with it; the calendar wins again.`);}}
   }
@@ -1704,6 +1835,10 @@ function scheduledEvents(g,d){
             "The federal cost shift has now plateaued at roughly $5 billion a year all-in — the SNAP share, the Medi-Cal share, the administrative load. It stops growing here. It also never goes away. The LAO files it under 'baseline' now, which is the bureaucratic word for grief that has been accepted.");
       }
       inbox(g,"Constitutional budget proposal due Jan 10 — PROPOSE JANUARY BUDGET (3 slots)","Jan 10");
+      // LEG-1: the new session introduces its own bills — the slate is different every year
+      const freshBills=BILL_POOL.filter(b=>(b.yr||2027)===y&&!g.bills.enactedIds.includes(b.id));
+      if(freshBills.length)cov(g,"CalMatters",`The ${y} session opens — and the bill drop has your name in it`,
+        `Introduction week brought the year's marquee fights into print: ${freshBills.slice(0,4).map(b=>`${b.t} (${b.num})`).join("; ")}${freshBills.length>4?"; and more":""}. ${y===2028?"It is an election year, which means half of these were written for the mail pieces, not the code books — and the ones that pass will land on your desk in September with cameras attached.":y===2029?"Post-election sessions swing for legacy: the members who just won four more years introduced everything they were saving.":"A reelection year: the Legislature knows exactly which bills you cannot afford to veto in October, and has introduced them on purpose."} SPONSOR LEGISLATION has the new slate; bills that died last session are eligible again.`);
     }
     if(y===2027){
       cov(g,"CalMatters","The software tax arrives with the moving trucks",
@@ -1987,40 +2122,50 @@ function suspenseFile(g,label){
   for(const b of held){
     const p=clamp(0.42+(g.player.attrs.INS-5)*0.035+g.legStanding/220+(g.actors.mods+g.actors.progs)/400,0.1,0.9);
     if(b.rescued||RNG.r()<p){b.stage="floor";out.push([b,"released"]);}
-    else{b.stage="dead";out.push([b,"held"]);}
+    else{billDied(g,b,"held in Appropriations");out.push([b,"held"]);}
   }
   const died=out.filter(x=>x[1]==="held"),lived=out.filter(x=>x[1]==="released");
   cov(g,"CalMatters",`The suspense file moves (${label})`,
     `The Appropriations Committee met for ${RNG.int(9,14)} minutes. The chair read a list of bill numbers.${died.length?` Yours ${died.length>1?"were":"was"} on it: ${died.map(x=>x[0].num+" ("+x[0].t+")").join(", ")} — held, no vote recorded, no reasons given. The suspense file works like this every year and it has never once been about the merits.`:""}${lived.length?` Released to the floor: ${lived.map(x=>x[0].num).join(", ")}.`:""}`);
   g.bills.pipeline=g.bills.pipeline.filter(b=>b.stage!=="dead");
 }
+function billOutcome(g,b,res){ // LEG-2: one ledger for the tracker panel
+  g.bills.outcomeLog=(g.bills.outcomeLog||[]);
+  g.bills.outcomeLog.unshift({t:g.turn,num:b.num,title:b.t,res,sponsored:!!b.sponsored});
+  if(g.bills.outcomeLog.length>14)g.bills.outcomeLog.pop();
+}
+function billDied(g,b,how){b.stage="dead";(g.bills.deadSess=g.bills.deadSess||{})[b.id]=turnDate(g.turn).y;billOutcome(g,b,how);}
 function sessionEnd(g,y){
-  // player floor bills resolve — L2: counted, not rolled
+  // player floor bills resolve — L2: counted, not rolled; LEG-3: whipped seats count here
   for(const b of g.bills.pipeline.filter(b=>b.stage==="floor")){
     const chit=g.flags.committeeChit?2:0; if(chit)g.flags.committeeChit=false; // R4: ally-appointment die
-    const v=voteModel(g,true,{bonusSeats:chit,tax:!!b.needs23}); // 2/3 revenue bills get no GOP votes
+    const v=voteModel(g,true,{bonusSeats:chit+(b.whip||0),tax:!!b.needs23}); // 2/3 revenue bills get no GOP votes
     const needA=b.needs23?54:41, needS=b.needs23?27:21;
     if(v.asm>=needA&&v.sen>=needS){b.stage="passed";b.floorVotes=v;g.bills.desk.push(b);}
-    else{b.stage="dead";
+    else{billDied(g,b,"died on the floor");
       cov(g,"Politico",`${b.num} dies in the August rush — ${v.asm} of ${needA} in the Assembly`,
-        `${b.t} came up ${Math.max(needA-v.asm,needS-v.sen)} votes short when the roll closed at midnight on the 31st: ${v.asm}–${79-v.asm} in the Assembly against the ${needA} it needed, ${v.sen}–${40-v.sen} in the Senate against ${needS}. Not a rumor of a margin — a number, printed in the Daily Journal, attached to your name. Eight hundred bills moved in seventy-two hours; yours was counted out. There is always next session, says everyone, to everyone, annually.`);}
+        `${b.t} came up ${Math.max(needA-v.asm,needS-v.sen)} votes short when the roll closed at midnight on the 31st: ${v.asm}–${79-v.asm} in the Assembly against the ${needA} it needed, ${v.sen}–${40-v.sen} in the Senate against ${needS}.${b.whip?" The "+b.whip+" votes you whipped showed up; they were not enough.":" Nobody whipped it, and it shows in the count."} Not a rumor of a margin — a number, printed in the Daily Journal, attached to your name. Eight hundred bills moved in seventy-two hours; yours was counted out. There is always next session, says everyone, to everyone, annually.`);}
   }
   g.bills.pipeline=g.bills.pipeline.filter(b=>!["dead","passed"].includes(b.stage));
-  // generate legislature's own bills for the desk
-  const pool=BILL_POOL.filter(b=>!b.sponsorOnly&&!g.bills.enactedIds.includes(b.id)&&!g.flags.sessionBillsDone[b.id]);
-  const n=Math.min(RNG.int(3,4),pool.length);
+  // generate the legislature's own bills for the desk — LEG-1: year-gated pool, and a real September volume
+  const inPlay=new Set([...g.bills.pipeline.map(b=>b.id),...g.bills.desk.map(b=>b.id)]);
+  const deadY=g.bills.deadSess||{};
+  const pool=BILL_POOL.filter(b=>!b.sponsorOnly&&(b.yr||2027)<=y&&!g.bills.enactedIds.includes(b.id)
+    &&!g.flags.sessionBillsDone[b.id]&&!inPlay.has(b.id)&&deadY[b.id]!==y
+    &&!(b.needs23&&!(g.player.party!=="R"&&g.actors.progs>5))); // 2/3 bills only reach the desk when the caucus math exists
+  const n=Math.min(RNG.int(5,8),pool.length);
   const picked=[];
   for(let i=0;i<n;i++){
     let b;do{b=RNG.pick(pool);}while(picked.includes(b));
-    if(b.needs23&&!(g.player.party!=="R"&&g.actors.progs>5))continue;
     picked.push(b);g.flags.sessionBillsDone[b.id]=true;
     g.bills.desk.push({...b,fromLeg:true});
   }
   if(g.bills.desk.length)cov(g,"CalMatters","Session ends — the desk fills",
-    `The Legislature adjourned at midnight August 31 in the usual blizzard. ${g.bills.desk.length} consequential bills now sit on the governor's desk with a September 30 deadline. Sign, veto, or let them become law without a signature — the third option fools no one.`);
+    `The Legislature adjourned at midnight August 31 in the usual blizzard: roughly 800 bills in the final seventy-two hours, of which ${g.bills.desk.length} consequential ones now sit on the governor's desk with a September 30 deadline. Sign, veto, or let them become law without a signature — the third option fools no one.`);
 }
 function enactBill(g,b,decision,silent){
   const fx=decision==="sign"?b.sign:b.veto;
+  billOutcome(g,b,decision==="sign"?(silent?"became law unsigned":"signed"):"vetoed");
   for(const[id,d]of Object.entries(fx.act||{}))dAct(g,id,d);
   if(fx.ap)dAp(g,fx.ap);
   if(decision==="sign"){
@@ -2035,6 +2180,7 @@ function enactBill(g,b,decision,silent){
     if(iss.insurBoost)queue(g,b.urgent?2:6,{k:"issue",key:"insurBoost",d:iss.insurBoost},"insur program ("+b.num+")","you");
     if(iss.medicalBoost)queue(g,b.urgent?2:4,{k:"issue",key:"medicalBoost",d:iss.medicalBoost},"medical program ("+b.num+")","you");
     if(iss.prisonRelief)queue(g,b.urgent?2:6,{k:"issue",key:"prisonRelief",d:iss.prisonRelief},"prison relief ("+b.num+")","you");
+    if(iss.grid)queue(g,b.urgent?2:8,{k:"grid",d:iss.grid},"grid procurement ("+b.num+")","you");
     if(fx.fedHeat)g.actors.fedadmin=clampA(g.actors.fedadmin-6);
     if(iss.pensionCut)g.fiscal.pension=Math.max(180,g.fiscal.pension-iss.pensionCut); // MECH-6: single write, no dead queue
   }else{
@@ -2690,12 +2836,19 @@ const ACTIONS=[
  {id:"sponsor",nm:"Sponsor Legislation",cat:"Political",slots:1,pc:4,
   when:g=>{const m=turnDate(g.turn).m;return m<=6?true:"Introduce by June (crossover); next window in January";},
   choices:g=>{
-    const base=SPONSOR_TOPICS.filter(([,,bid])=>!g.bills.enactedIds.includes(bid)&&!g.bills.pipeline.find(b=>b.id===bid)).map(([tid,nm,bid])=>{
-      const b=BILL_POOL.find(x=>x.id===bid);
-      return {id:bid,nm:nm+" ("+b.num+")",d:b.d,cost:b.needs23?"NEEDS 2/3 — 54 & 27":"Path: committee → suspense file → floor → your desk (3–9 turns)"};});
-    for(const uid of ["b_insur","b_medbackfill"]){ // MISS-4: urgency statutes — 2/3, immediate effect, no calendar
-      if(!g.bills.enactedIds.includes(uid)&&!g.bills.pipeline.find(b=>b.id===uid)){
-        const b=BILL_POOL.find(x=>x.id===uid);
+    // LEG-1: the menu is the year's actual slate — new bills unlock each session, sponsored ones leave,
+    // enacted ones never return, and a bill that died this session can only come back next January.
+    const y=turnDate(g.turn).y;
+    const inPlay=new Set([...g.bills.pipeline.map(b=>b.id),...g.bills.desk.map(b=>b.id)]);
+    const deadY=g.bills.deadSess||{};
+    const avail=BILL_POOL.filter(b=>!b.legOnly&&(b.yr||2027)<=y&&!g.bills.enactedIds.includes(b.id)&&!inPlay.has(b.id)&&deadY[b.id]!==y)
+      .slice().sort((a,b)=>((b.yr||2027)-(a.yr||2027))||(a.topic<b.topic?-1:1));
+    const base=avail.map(b=>({id:b.id,
+      nm:`${b.t} (${b.num})${(b.yr||2027)===y&&y>2027?" · NEW THIS SESSION":""}`,
+      d:b.d,cost:b.needs23?"NEEDS 2/3 — 54 & 27":"committee → suspense → floor → desk · PUSH LEGISLATION moves it once it's in"}));
+    for(const uid of ["b_insur","b_medbackfill","b_backstop"]){ // MISS-4: urgency statutes — 2/3, immediate effect, no calendar
+      const b=BILL_POOL.find(x=>x.id===uid);
+      if((b.yr||2027)<=y&&!g.bills.enactedIds.includes(uid)&&!inPlay.has(uid)&&deadY[uid]!==y){
         base.push({id:uid+"|U",nm:"⚡ URGENCY: "+b.t+" ("+b.num+")",
           d:b.d+" As an urgency statute it skips the suspense file, gets monthly floor votes, and takes effect the day you sign — the only way a legislative fix lands inside a year-one deadline.",
           cost:"NEEDS 2/3 — 54 & 27, counted monthly; 3 misses kills it"});}}
@@ -2708,6 +2861,52 @@ const ACTIONS=[
     cov(g,"CalMatters",`Administration bill drops: ${b.num}, ${b.t}${urgent?" — WITH AN URGENCY CLAUSE":""}`,
       urgent?`${b.d} The urgency clause changes everything about the path: no suspense file, monthly floor votes, immediate effect on signature — and a two-thirds price (54 and 27) that will be counted in public every month it fails. This is how you legislate against a deadline.`:
       `${b.d} Sponsors secured, co-authors listed, and now the gauntlet: policy committee, then the Appropriations suspense file — where fiscal bills go to be held and released or killed in bulk, without recorded votes, on the chair's schedule and no one else's.`);}},
+ /* LEG-3: sponsorship is an introduction, not a prayer — the follow-through verbs live here */
+ {id:"pushbill",nm:"Push Legislation",cat:"Political",slots:1,pc:3,
+  when:g=>g.bills.pipeline.length?true:"No bill of yours is in the building — SPONSOR LEGISLATION first",
+  choices:g=>{
+    const out=[];
+    for(const b of g.bills.pipeline){
+      if(b.stage==="committee")out.push({id:b.id+"|testify",nm:`${b.num} ${b.t} — testify & work the chair`,
+        d:"Personal testimony, a governor's-office analysis on every member's desk, and a call to the chair's cell. Moves the bill out of policy committee NOW if the INS roll lands; failure costs standing and the chair's patience.",
+        cost:"INS roll · committee stage"});
+      else if(b.stage==="suspense")out.push({id:b.id+"|trade",nm:`${b.num} ${b.t} — trade for a suspense release`,
+        d:"The chair's list is a market. Offer a district appointment, a signing ceremony, a budget line nobody will trace — and the bill migrates from the held list to the released list before the hearing.",
+        cost:b.rescued?"Release already secured":"COA roll · guarantees release if it lands"});
+      else if(b.stage==="floor")out.push({id:b.id+"|whip",nm:`${b.num} ${b.t} — whip the floor`,
+        d:`Member-by-member calls from the horseshoe${b.whip?" (already whipped +"+b.whip+" Assembly votes)":""}. Current count if voted today: ${voteModel(g,false,{bonusSeats:(b.whip||0),tax:!!b.needs23}).asm}/80 Assembly · needs ${b.needs23?54:41}. Success adds +4 Assembly / +2 Senate to every vote this bill faces.`,
+        cost:(b.whip||0)>=8?"Whip capped at +8 — every callable member has been called":"COA roll · stacks to +8"});
+    }
+    return out;},
+  run:(g,c)=>{const cut=c.lastIndexOf("|"),bid=c.slice(0,cut),verb=c.slice(cut+1);
+    const b=g.bills.pipeline.find(x=>x.id===bid);if(!b)return;
+    if(verb==="testify"){
+      const r=roll(g,"INS",0.12,g.legStanding/300);
+      if(r.ok){b.stage=b.urgent?"floor":"suspense";b.boost=(b.boost||0)+0.2;
+        cov(g,"CalMatters",`${b.num} clears committee with the governor in the room`,
+          `You testified personally — governors almost never do — and the chair moved the vote up a week rather than make you come back. ${b.urgent?"The urgency clause sends it straight to monthly two-thirds floor votes.":"Next stop: the suspense file, where testimony means nothing and the chair's list means everything."}`);}
+      else{g.legStanding-=2;
+        cov(g,"Politico","The committee was not moved",
+          `${b.num} stays in committee. The chair heard you out, thanked you for coming, and adjourned without a vote — the building's way of saying the price hasn't been named yet. You can come back; the bill can also just die here.`);}}
+    else if(verb==="trade"){
+      if(b.rescued)return;
+      const r=roll(g,"COA",0.15,g.legStanding/300);
+      if(r.ok){b.rescued=true;
+        cov(g,"Politico",`${b.num} moves onto the released list — someone got something`,
+          "The suspense file is a market and you paid the going rate: nothing anyone will confirm, everything everyone assumes. When the chair reads the list at the next hearing, your number is on the living side of it.");}
+      else{g.legStanding-=2;
+        cov(g,"Politico","The chair's price was too high",
+          `The Appropriations chair wanted a commitment you weren't ready to make on camera. ${b.num} stays on the held list, subject to the ordinary odds. There is a number that moves it; you just haven't offered it.`);}}
+    else if(verb==="whip"){
+      if((b.whip||0)>=8)return;
+      const r=roll(g,"COA",0.1,(g.actors.progs+g.actors.mods)/500);
+      if(r.ok){b.whip=(b.whip||0)+4;
+        const v=voteModel(g,false,{bonusSeats:b.whip,tax:!!b.needs23});
+        cov(g,"AP",`The horseshoe whips ${b.num} — and the count moves`,
+          `Twelve calls, two district promises, one signing-ceremony invitation. The whip count on "${b.t}" now projects ${v.asm}/80 in the Assembly and ${v.sen}/40 in the Senate against the ${b.needs23?"54 and 27":"41 and 21"} it needs. Whipped votes are real votes here — they go into the count the engine actually runs, not into a press release.`);}
+      else{g.legStanding-=1;
+        cov(g,"Politico","The whip count doesn't move",
+          "Members took the calls, said warm things, and committed to nothing — the building's most practiced verb. No votes gained; the attempt itself was noticed, which cuts both ways.");}}}},
  {id:"suspensecall",nm:"Suspense File Call",cat:"Political",slots:1,pc:8,
   when:g=>g.player.bg!=="leg"?"Legislative Leader feature":
     (g.bills.pipeline.find(b=>b.stage==="suspense"||b.stage==="committee")?(g.flags.suspenseUsedSess!==turnDate(g.turn).y?true:"Once per session"):"No bill in/near the suspense file"),
@@ -2835,13 +3034,13 @@ LAG_FNS._defederalize=g=>{g.flags.guardFederalized=false;
     "The federalization order lapsed without ceremony — a two-line memo, four thousand soldiers back under state command, and no acknowledgment that anything had been proven by any of it. Your adjutant general has resumed issuing orders instead of receiving them.");};
 LAG_FNS._advanceCommittee=g=>{
   for(const b of g.bills.pipeline)if(b.stage==="committee"){
-    const p=clamp(0.6+(g.player.attrs.INS-5)*0.03+g.legStanding/300,0.2,0.95);
+    const p=clamp(0.6+(g.player.attrs.INS-5)*0.03+g.legStanding/300+(b.boost||0),0.2,0.97); // LEG-3: testimony pressure counts
     if(RNG.r()<p){b.stage=b.urgent?"floor":"suspense";
       cov(g,"CalMatters",`${b.num} clears policy committee — next stop, the suspense file`,
-        "The easy part is over. Appropriations holds fiscal bills in bulk and disposes of them in bulk — twice a year, in minutes, without recorded individual votes. Yours now waits with several hundred others for the chair's list.");}
-    else{b.stage="dead";
+        "The easy part is over. Appropriations holds fiscal bills in bulk and disposes of them in bulk — twice a year, in minutes, without recorded individual votes. Yours now waits with several hundred others for the chair's list."+(b.boost?" Your personal appearance at the hearing is the reason the vote wasn't close.":""));}
+    else{billDied(g,b,"died in policy committee");
       cov(g,"Politico",`${b.num} dies in policy committee`,
-        "Four votes, three noes, one abstention with a lobbyist in the second row. Your bill never made it far enough to die in the famous place.");}
+        "Four votes, three noes, one abstention with a lobbyist in the second row. Your bill never made it far enough to die in the famous place."+(b.boost?"":" Nobody from the horseshoe testified, and members noticed the empty chair."));}
   }
   g.bills.pipeline=g.bills.pipeline.filter(b=>b.stage!=="dead");
 };
@@ -3132,7 +3331,7 @@ function renderPlay(){
   const apDelta=g.hist.approval.length>=2?g.approval-g.hist.approval[g.hist.approval.length-2]:0;
   const tab=UI.tab||"overview";
   let content="";
-  if(tab==="overview")content=`<div class="ov-col">${tipsBanner(g)}${statTiles(g,apDelta)}${budgetDesk(g)}${transitionPanel(g)}${cardPanel(g)}${setpiece(g,d)}${hsrTracker(g)}${memoPanel(g)}${agendaPanel(g)}${promiseStrip(g)}${headlinesPanel(g)}</div>`;
+  if(tab==="overview")content=`<div class="ov-col">${tipsBanner(g)}${statTiles(g,apDelta)}${budgetDesk(g)}${transitionPanel(g)}${cardPanel(g)}${setpiece(g,d)}${hsrTracker(g)}${memoPanel(g)}${legTrackerPanel(g)}${agendaPanel(g)}${promiseStrip(g)}${headlinesPanel(g)}</div>`;
   else if(tab==="state")content=`<div class="ov-col" style="max-width:1200px">${chartExplorer(g)}<div class="two-col">${fiscalPanel(g)}${issuesPanel(g)}</div></div>`;
   else if(tab==="politics")content=`<div class="two-col">${politicalPanel(g)}${promisesPanel(g)}</div>`;
   else content=`<div class="news-col">${masthead(g)}${feedPanel(g)}</div>`;
@@ -3308,6 +3507,31 @@ function inMotionPanel(g){
     return `<div class="inbox-item"><span class="due">[${vague?"~":""}${turnDate(l.due).label}]</span><span>${esc(l.label)}${l.by==="you"?' <span class="pill" style="color:var(--aqua);border-color:var(--aqua)">YOURS</span>':""}</span></div>`;}).join("")}
   ${g.lag.length>10?`<div class="subtle">…and ${g.lag.length-10} more in the pipeline</div>`:""}</div>`;
 }
+/* LEG-2: the bill tracker — where every piece of legislation actually is, in public */
+function legTrackerPanel(g){
+  const pipe=g.bills.pipeline,desk=g.bills.desk,log=(g.bills.outcomeLog||[]).slice(0,6);
+  if(!pipe.length&&!desk.length&&!log.length)return "";
+  const d=turnDate(g.turn);
+  const stageRow=b=>{
+    const stages=b.urgent?["Introduced","Committee","Floor · ⅔ monthly","Desk"]:["Introduced","Committee","Suspense","Floor","Desk"];
+    const idx=b.urgent?(b.stage==="committee"?1:b.stage==="floor"?2:3):(b.stage==="committee"?1:b.stage==="suspense"?2:b.stage==="floor"?3:4);
+    const chips=stages.map((s,i)=>`<span class="lt-st ${i<idx?"done":i===idx?"now":""}">${s}</span>`).join(`<span class="lt-arrow">›</span>`);
+    const v=voteModel(g,false,{bonusSeats:b.whip||0,tax:!!b.needs23});
+    const needA=(b.urgent||b.needs23)?54:41,needS=(b.urgent||b.needs23)?27:21; // urgency statutes take 2/3 regardless
+    const next=b.urgent?"floor vote EVERY month (3 misses kills it)":b.stage==="committee"?"committee vote pending — PUSH LEGISLATION can force it":b.stage==="suspense"?`the chair's list moves in ${d.m<=5?"May":d.m<=8?"August":"May"}`:"floor vote when session ends (Aug 31)";
+    return `<div class="lt-row"><div class="lt-hd"><b>${b.num}</b> ${b.t}
+      ${b.urgent?'<span class="pill" style="color:var(--warn);border-color:var(--warn);font-size:8px">URGENCY</span>':""}
+      ${b.needs23?'<span class="pill" style="color:var(--warn);border-color:var(--warn);font-size:8px">NEEDS ⅔</span>':""}
+      ${b.rescued&&b.stage==="suspense"?'<span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">RELEASE SECURED</span>':""}
+      ${b.whip?`<span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">WHIPPED +${b.whip}</span>`:""}</div>
+      <div class="lt-stages">${chips}</div>
+      <div class="lt-meta"><span class="num">count if voted today: Asm ${v.asm}/${needA} · Sen ${v.sen}/${needS}</span> <span class="subtle">· next: ${next}</span></div></div>`;};
+  return `<div class="panel"><h3>Bill Tracker <span class="subtle">${pipe.length} in the building · ${desk.length} on the desk</span></h3>
+  ${pipe.length?pipe.map(stageRow).join(""):`<div class="subtle">Nothing of yours is in the building. SPONSOR LEGISLATION opens the ${d.y} slate${d.m>6?" in January (introduction deadline passed)":""}.</div>`}
+  ${desk.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">ON THE DESK — sign or veto by Sept 30</div>${desk.map(b=>`<div class="lt-meta">▸ ${b.num} ${b.t}${b.sponsored?' <span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">YOURS</span>':""}${b.fromLeg?' <span class="subtle" style="font-size:9px">(the Legislature’s)</span>':""}</div>`).join("")}`:""}
+  ${log.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">RECENT OUTCOMES</div>${log.map(o=>`<div class="lt-meta"><span class="due">[${turnDate(o.t).label}]</span> ${o.num} ${esc(o.title)} — <span style="color:${o.res==="signed"?"var(--good)":o.res==="vetoed"?"var(--red)":o.res==="became law unsigned"?"var(--ink2)":"var(--serious)"}">${o.res}</span>${o.sponsored?' <span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">YOURS</span>':""}</div>`).join("")}`:""}
+  </div>`;
+}
 /* F2: the Chief of Staff briefing */
 function buildMemo(g){
   const d=turnDate(g.turn),out=[];
@@ -3320,8 +3544,11 @@ function buildMemo(g){
   if(g.flags.disasterActive&&!g.flags.disasterActive.handled)out.push("Active disaster, no declaration. Every hour without a command presence is a clip. DECLARE EMERGENCY.");
   if(g.issues.prison>134)out.push(`Prison at ${g.issues.prison.toFixed(1)}% of the 137.5% federal cap. Comply before the panel loses patience — contempt attaches personally.`);
   for(const id of MONEYED){if(g.actors[id]>-60&&g.actors[id]<=-48)out.push(`${ACTORS.find(a=>a.id===id).nm} is ${Math.abs(-60-g.actors[id])} points from existential opposition — that means a permanent campaign against you. A deal now is cheaper than a war later.`);}
-  const susp=g.bills.pipeline.filter(b=>b.stage==="suspense").length;
-  if(susp&&(d.m===4||d.m===7))out.push(`${susp} of your bills sit on the suspense file; the chair's list moves ${d.m===4?"in May":"in August"}.${g.player.bg==="leg"?" You still have SUSPENSE FILE CALL.":""}`);
+  const susp=g.bills.pipeline.filter(b=>b.stage==="suspense"&&!b.rescued).length;
+  if(susp&&(d.m===4||d.m===7))out.push(`${susp} of your bills sit on the suspense file with nothing secured; the chair's list moves ${d.m===4?"in May":"in August"}. PUSH LEGISLATION can trade for a release${g.player.bg==="leg"?", and you still have SUSPENSE FILE CALL":""}.`);
+  const floorers=g.bills.pipeline.filter(b=>b.stage==="floor"&&!b.urgent);
+  if(floorers.length&&d.m>=6&&d.m<=8){const short=floorers.filter(b=>{const v=voteModel(g,false,{bonusSeats:b.whip||0,tax:!!b.needs23});return v.asm<(b.needs23?54:41)||v.sen<(b.needs23?27:21);});
+    out.push(`${floorers.length} of your bills await the August floor${short.length?` — and ${short.length===floorers.length?"the count is SHORT":short.length+" project(s) SHORT"} on today's numbers. PUSH LEGISLATION (whip) adds real votes`:" and the count holds on today's numbers — whipping adds insurance"}.`);}
   if(d.y===2030&&d.m<=5&&g.flags.ltgovHostile&&!g.flags.primaryBlitz)out.push("The Lieutenant Governor is running and your primary is in June. PRIMARY CAMPAIGN BLITZ is sitting there. Incumbents who skip it join a support group.");
   if(g.pc>60&&g.slots===3)out.push(`You're sitting on ${g.pc} PC and a full slate of actions. Capital unspent is capital decaying — the honeymoon math never improves.`);
   if(!out.length)out.push("A quiet month on paper. There is no such thing — check In Motion for what's already coming, and spend the quiet building standing you'll need in the loud months.");
