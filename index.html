@@ -1711,10 +1711,12 @@ function endMonth(g){
   actorBehaviors(g,d);
   // 9. approval drift toward fundamentals
   driftApproval(g);
-  // 10. PC regen
+  // 10. PC regen — PC-1: quiet months bank capital. Unused slots read as restraint, and
+  // restraint reads as strength; a governor who isn't asking for anything accumulates chits.
   let regen=TUNING.PC_REGEN_BASE+Math.round((g.approval-45)/8);
   if(g.honeymoon>0){regen+=2;g.honeymoon--;}
-  g.pc=clamp(g.pc+clamp(regen,1,7),0,110);
+  if(g.slots>=2)regen+=2;else if(g.slots===1)regen+=1;
+  g.pc=clamp(g.pc+clamp(regen,1,9),0,110);
   if(g.flags.transitionMalus>0)g.flags.transitionMalus--;
   if(g.flags.weakened&&g.turn>g.flags.weakened.until)g.flags.weakened=null; // R4 decay
   if(g.transitionOpen&&g.turn>=3)transitionDeadline(g); // the transition window closes with March
@@ -1847,6 +1849,7 @@ function scheduledEvents(g,d){
   // LAO blasted you in February for missing a window the UI never opened. Reset as December closes.
   if(m===12&&g.turn<48){
     g.fiscal.budget={proposed:false,mix:null,solved:0,grade:null,enacted:false,late:0};
+    g.flags.maySkipNoted=false; // SWEEP-5: hiding in May costs EVERY year, not just the first
     inbox(g,"Constitutional budget proposal due Jan 10 — PROPOSE JANUARY BUDGET (3 slots)","Jan 10");
   }
   // Jan: new-fiscal-year bookkeeping (drift, H.R.1 ramp, the new session's slate)
@@ -1882,17 +1885,19 @@ function scheduledEvents(g,d){
       dAp(g,grade.ap);
     }
   }
-  if(m===5){ // May Revision reality + suspense file #1
+  // SWEEP-2: April's receipts land at APRIL's end, so the number exists while the May window is
+  // actually open — the old code revealed the gap (and the call to action) one turn after it closed.
+  if(m===4&&B.proposed&&!B.revised){
+    const M=g.market;
+    const gap=M.mode==="exuberant"?RNG.norm(1.5,2):M.mode==="recovery"?RNG.norm(-2,2):RNG.norm(-9,4);
+    B.mayGap=Math.round(gap*10)/10;
+    cov(g,"CalMatters","April receipts are in — the May Revision has its number",
+      gap>=0?`Collections came in slightly ahead — ${fmtB(Math.abs(gap))} of breathing room, most of it pre-committed to Prop 98 and reserves before anyone could enjoy it. The May Revision can be a victory lap, if you take it.`
+      :`April did not deliver: roughly ${fmtB(Math.abs(gap))} of revenue that January assumed is not coming. The May Revision — due THIS coming month — is where you reckon with it in public, or conspicuously don't.`);
+    if(gap<0)g.fiscal.deficit=Math.max(0,g.fiscal.deficit-gap*0.6);
+  }
+  if(m===5){ // suspense file #1
     suspenseFile(g,"May");
-    if(B.proposed&&!B.revised){
-      const M=g.market;
-      const gap=M.mode==="exuberant"?RNG.norm(1.5,2):M.mode==="recovery"?RNG.norm(-2,2):RNG.norm(-9,4);
-      B.mayGap=Math.round(gap*10)/10;
-      cov(g,"CalMatters","May Revision week: the revenue is what it is",
-        gap>=0?`The May numbers came in slightly ahead — ${fmtB(Math.abs(gap))} of breathing room, most of it pre-committed to Prop 98 and reserves before anyone could enjoy it.`
-        :`The May Revision must absorb roughly ${fmtB(Math.abs(gap))} of revenue that January assumed and April did not deliver. The MAY REVISION action is how you handle it in public.`);
-      if(gap<0)g.fiscal.deficit=Math.max(0,g.fiscal.deficit-gap*0.6);
-    }
   }
   if(m===6){ // June 15 enactment
     if(B.proposed&&!B.revised&&!g.flags.maySkipNoted){g.flags.maySkipNoted=true; // MECH-9: hiding in May costs
@@ -2284,7 +2289,11 @@ function randomEvents(g,d){
   const m=d.m,I=g.issues;
   // Wildfire season Jun–Oct
   if(m>=6&&m<=10&&!g.flags.disasterActive){
-    if(RNG.chance(0.035)){ // catastrophic (LA-2025 scale) — APPT: a fire-siege-tested CNRA secretary shaves the fiscal wound
+    // SWEEP-4: the Fire Year scenario now actually loads the dice — elevated odds all season,
+    // a guaranteed October if the season somehow held, then the flag burns off with the fire.
+    const catP=(g.flags.fireYearForced&&d.y===2027)?(m===10?1:0.3):0.035;
+    if(RNG.chance(catP)){ // catastrophic (LA-2025 scale) — APPT: a fire-siege-tested CNRA secretary shaves the fiscal wound
+      g.flags.fireYearForced=false;
       g.flags.disasterActive={type:"fire",sev:3,turn:g.turn};
       I.fireYtd+=RNG.int(600,1100); I.insur=clamp(I.insur-9,0,100);
       g.fiscal.deficit+=Math.max(0.5,1.2-cabPerk(g,"fire"));
@@ -2409,7 +2418,7 @@ function randomEvents(g,d){
     dAp(g,0.5);
   }
   // Capitol Notebook — the atmospheric column (quarterly, deterministic slot, seeded pick)
-  if(g.turn%4===2){
+  if(g.turn%3===2){ // SWEEP-6: %4 was a 4-month cadence; the column is quarterly as designed
     const nb=RNG.pick([
       ["The suspense file, by the numbers","Since 2015 the two Appropriations committees have held roughly a quarter of everything that reached them — thousands of bills dispatched in hearings that average under fifteen minutes, without a recorded vote on any individual measure. Ask a chair how the list gets made and you will receive a warm smile and a change of subject. Ask a former chair and you will receive the truth: the list is the whole job, the hearing is a reading of its results, and the merits were adjudicated weeks earlier in rooms with no cameras and excellent coffee. Every governor learns to count in suspense-file time. The ones who learn fastest lose the fewest bills."],
       ["What $9 buys in California politics","That is the going per-signature rate this cycle, up from roughly $3 a decade ago, and it is the most important price in the state that no one tracks on a dashboard. At $9 a name, an initiated constitutional amendment costs eight or nine million dollars to qualify before a single ad runs — which means the ballot, direct democracy's great equalizer, is functionally a members-only club with perhaps two dozen institutions holding cards. The unions have one. The Chamber has one. Certain individuals have one. Everyone else has a website and a dream, and the 180-day clock treats them identically."],
@@ -2642,7 +2651,10 @@ const ACTIONS=[
       if(r.ok){dAp(g,1);cov(g,"CalMatters","May Revision holds — and holds up","The revenue team threaded it: aggressive but defensible assumptions the LAO couldn't quite falsify. The June negotiation starts from your numbers.");g.fiscal.budget.solved+=1.5;}
       else{dAp(g,-2.5);cov(g,"LAO","May Revision review: the office is not persuaded","The Revision assumes April receipts that April has already declined to deliver. We have used the word 'exuberant' before in this space; we regret its continued utility.");}}}},
  {id:"lineitem",nm:"Line-Item Veto (blue pencil)",cat:"Constitutional",slots:1,pc:6,
-  when:g=>{const m=turnDate(g.turn).m;return g.fiscal.budget.enacted&&(m===6||m===7)?true:"Enacted budget, June–July";},
+  // SWEEP-1: the blue pencil is exercised AT signing — a budget on the desk (awaiting) counts, and the
+  // window runs into August for late budgets. The old enacted-only June gate was dead code every year.
+  when:g=>{const m=turnDate(g.turn).m,B=g.fiscal.budget;
+    return (B.enacted||B.awaiting)&&(m>=6&&m<=8)?true:"A passed or enacted budget, June–August";},
   gate:g=>null,
   choices:g=>[{id:"trim",nm:"Trim member items & augmentations (−$1.5B)",d:"Reduce or eliminate appropriation items. You cannot increase anything, and you cannot touch substantive language.",cost:"Legislators remember their districts"}],
   run:(g,c)=>{g.fiscal.deficit=Math.max(0,g.fiscal.deficit-1.5);g.legStanding-=8;dAct(g,"progs",-6);dAct(g,"mods",-6);
@@ -2752,7 +2764,7 @@ const ACTIONS=[
     else{g.flags.fiscalEmergency=true;g.flags.fiscalEmergencyY=turnDate(g.turn).y;dAp(g,-1);
       cov(g,"CalMatters","Governor declares a budget emergency","The Prop 2 predicate is now in place: a majority of each house can authorize a rainy-day withdrawal — capped at half the balance in year one. The declaration itself is a headline your opponents will laminate.");}}},
  {id:"bsa",nm:"Withdraw from the BSA",cat:"Fiscal maneuvers",slots:1,pc:5,
-  when:g=>true,
+  when:g=>g.flags.bsaDrawY===turnDate(g.turn).y?"Already drew this year — Prop 2's cap is annual, and the Controller counts":true,
   gate:g=>g.flags.fiscalEmergencyY!==turnDate(g.turn).y?WALLS.find(w=>w.id==="w_bsa").txt:null,
   choices:g=>{const y=turnDate(g.turn).y;
     const consec=g.flags.bsaTakenY1&&g.flags.bsaLastY===y-1; // REAL-8: remainder ONLY in the second CONSECUTIVE emergency year
@@ -2764,7 +2776,7 @@ const ACTIONS=[
       const consec=g.flags.bsaTakenY1&&g.flags.bsaLastY===y-1;
       const amt=consec?g.fiscal.bsa:Math.round(g.fiscal.bsa*0.5*10)/10;
       g.fiscal.bsa-=amt;g.fiscal.resLao-=amt;g.fiscal.resAdmin-=amt;g.fiscal.deficit=Math.max(0,g.fiscal.deficit-amt*0.55);
-      g.flags.bsaTakenY1=true;g.flags.bsaLastY=y;
+      g.flags.bsaTakenY1=true;g.flags.bsaLastY=y;g.flags.bsaDrawY=y; // SWEEP-3: one draw per calendar year, as Prop 2 wrote it
       cov(g,"CalMatters",`The rainy-day fund pays out ${fmtB(amt)} — ${v.asm}–${79-v.asm}, ${v.sen}–${40-v.sen}`,
         "Both houses signed off, on the record. The LAO's reminder, printed verbatim as always: reserves are one-time money and the deficit is annual — this buys a year, not a solution. The next downturn now arrives to a thinner cushion.");}
     else{spendPC(g,3);cov(g,"Politico",`The Legislature declines to open the vault — ${v.asm} of 41`,
@@ -2882,6 +2894,35 @@ const ACTIONS=[
     amt=Math.round(amt*10)/10;g.player.chest+=amt;
     cov(g,"Politico","$"+amt.toFixed(1)+"M raised — call time never ends",
       "An evening in Atherton or a small-dollar blast, depending on your church. The war chest is the initiative threat, the recall insurance, and the reelection — all denominated in the same dollars.");}},
+ /* PC-1: the missing verb — political capital you go EARN instead of waiting for.
+    Two slots because it eats a real month; once a quarter because the circuit needs fresh material. */
+ {id:"barnstorm",nm:"Barnstorm the State",cat:"Political",slots:2,pc:0,
+  when:g=>(g.flags.barnstormCd||0)>g.turn?`The circuit needs fresh material — once a quarter (back ${turnDate(g.flags.barnstormCd).label})`:true,
+  choices:g=>[
+    {id:"crowds",nm:"Town halls & friendly crowds",d:"Three weeks on the road being seen governing: county fairs, ribbon cuttings, an hour of unscripted questions in a gym. CHA roll — capital either way, more if you're good at this.",cost:"+PC (CHA) · approval swing"},
+    {id:"donors",nm:"The donor circuit",d:"Atherton, Brentwood, a Fresno ag dinner. Checks AND chits — the people who write one usually broker the other. No roll; the wine-cave photo is the price.",cost:"+4 PC · +war chest · approval −0.4"},
+    {id:"counties",nm:"Work the counties",d:"Fifty-eight courthouses, a hundred supervisors, every mayor who returns calls. Quiet COA work that the Capitol hears about within the week.",cost:"+PC (COA) · leadership +"}],
+  run:(g,c)=>{
+    g.flags.barnstormCd=g.turn+3;
+    if(c==="crowds"){const r=roll(g,"CHA",0.05,0);
+      if(r.ok){g.pc=clamp(g.pc+8,0,110);dAp(g,0.8);
+        cov(g,"AP","Three weeks on the road, and the building notices",
+          "The tour was standard-issue — gyms, fairgrounds, a levee in a hard hat — and it worked the way it always has: members return calls faster for a governor their constituents just saw in person. Political capital is mostly the rumor of popularity, refreshed. You refreshed it.");}
+      else{g.pc=clamp(g.pc+4,0,110);dAp(g,-0.4);
+        cov(g,"Politico","The barnstorm hits weather",
+          "A heckler in Redding led two news cycles, and the gym in Stockton was a third full. Still worth doing — the counties log the visit even when the clips are bad — but the capital came back at half rate and the approval needle ticked the wrong way.");}}
+    else if(c==="donors"){g.pc=clamp(g.pc+4,0,110);
+      let amt=3+g.player.attrs.CHA*0.3;if(g.actors.chamber>20)amt+=1.5;if(g.actors.tech>20)amt+=1.5;
+      amt=Math.round(amt*10)/10;g.player.chest+=amt;dAp(g,-0.4);
+      cov(g,"Politico",`The circuit: $${amt.toFixed(1)}M raised, and the other currency too`,
+        "Fundraisers are never only about money. The hosts broker introductions, the introductions become chits, and the chits are political capital with a paper trail nobody keeps. The photo from the third stop will surface in an ad eventually. Everyone at the table knew that, including you.");}
+    else{const r=roll(g,"COA",0.1,0);
+      if(r.ok){g.pc=clamp(g.pc+7,0,110);g.legStanding+=3;dAct(g,"localgov",3);dAct(g,"agri",2);
+        cov(g,"CalMatters","The courthouse tour pays off in the Capitol",
+          "Fifty-eight counties have long memories and short guest lists. A month of showing up — supervisors' chambers, water boards, one very long lunch in Colusa — and suddenly members hear from home that the governor 'gets it.' That sentence, repeated in district offices, is what capital is made of.");}
+      else{g.pc=clamp(g.pc+3,0,110);
+        cov(g,"Politico","A quiet month upstate, quietly received",
+          "The visits happened; the translation to the building was lossy. Some capital banked, less than the calendar cost. The counties will remember you came — in about four years, when it matters least.");}}}},
  {id:"cycle",nm:"Dominate the Cycle",cat:"Political",slots:1,pc:3,
   when:g=>g.player.bg==="media"?(g.flags.cycleUsedQ!==Math.floor((g.turn-1)/3)?true:"Once per quarter"):"Media Figure feature",
   run:(g,c)=>{g.flags.cycleUsedQ=Math.floor((g.turn-1)/3);dAp(g,2);g.flags.frameBonus=true;
@@ -3639,6 +3680,7 @@ function buildMemo(g){
     out.push(`${floorers.length} of your bills await the August floor${short.length?` — and ${short.length===floorers.length?"the count is SHORT":short.length+" project(s) SHORT"} on today's numbers. PUSH LEGISLATION (whip) adds real votes`:" and the count holds on today's numbers — whipping adds insurance"}.`);}
   if(d.y===2030&&d.m<=5&&g.flags.ltgovHostile&&!g.flags.primaryBlitz)out.push("The Lieutenant Governor is running and your primary is in June. PRIMARY CAMPAIGN BLITZ is sitting there. Incumbents who skip it join a support group.");
   if(g.pc>60&&g.slots===3)out.push(`You're sitting on ${g.pc} PC and a full slate of actions. Capital unspent is capital decaying — the honeymoon math never improves.`);
+  if(g.pc<12&&(g.flags.barnstormCd||0)<=g.turn)out.push(`Political capital is down to ${g.pc} — you can't afford your own agenda. BARNSTORM THE STATE converts a road month into chits (town halls, the donor circuit, or the counties), and an under-scheduled month quietly regenerates more than a frantic one.`);
   if(!out.length)out.push("A quiet month on paper. There is no such thing — check In Motion for what's already coming, and spend the quiet building standing you'll need in the loud months.");
   return out;
 }
@@ -3765,7 +3807,7 @@ function cardPanel(g){
 function tipsBanner(g){
   const t=g.flags.tips,items=[];
   if(!t.slots&&g.turn===1)items.push(["slots","THREE SLOTS A MONTH. Everything you do costs at least one. Crises can eat them without asking. Governing is triage with a letterhead."]);
-  if(!t.pc&&g.turn===2)items.push(["pc","POLITICAL CAPITAL is the real currency — actions burn it, wins and time regenerate it, and the honeymoon bonus dies around month eight. Spend while you're liked."]);
+  if(!t.pc&&g.turn===2)items.push(["pc","POLITICAL CAPITAL is the real currency — actions burn it; approval, quiet months (unused slots), and BARNSTORM THE STATE rebuild it. The honeymoon bonus dies around month eight. Spend while you're liked."]);
   if(!t.motion&&g.lag.length>0&&g.turn>=2)items.push(["motion","IN MOTION (below) is the lag queue: everything you set moving and when it lands. Nothing in this state resolves on the day you decide it — that panel is the game's honest heart."]);
   if(!t.prov&&g.turn===3)items.push(["prov","HOVER ANY DOTTED NUMBER for its source and provenance tag. VERIFIED means the research doc pins it; UNVERIFIED means the engine is honest about guessing. The MODEL NOTES drawer lists every guess."]);
   if(!items.length)return "";
