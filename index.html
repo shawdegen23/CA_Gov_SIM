@@ -367,6 +367,12 @@
   .tcand .tc-wt{display:block; font-family:var(--mono); font-size:9px; color:var(--yellow); margin-top:3px; letter-spacing:.02em; white-space:normal;}
   .tcand .tc-fx{color:var(--muted);}
 
+  /* constitutional-calendar setpieces */
+  .season-crit{border:1px solid var(--critical); animation:seasonpulse 2.6s ease-in-out infinite;}
+  @keyframes seasonpulse{0%,100%{box-shadow:0 0 10px rgba(208,59,59,.16);}50%{box-shadow:0 0 26px rgba(208,59,59,.38);}}
+  .season-warn{border:1px solid var(--warn); box-shadow:0 0 14px rgba(250,178,25,.14);}
+  .big-cta{font-size:14px; padding:10px 18px; margin-top:6px;}
+
   /* bill tracker */
   .lt-row{border-top:1px dotted var(--grid); padding:6px 0 5px;}
   .lt-hd{font-size:12px; color:var(--ink);}
@@ -455,7 +461,9 @@ const TUNING={
   HR1_JAN_CAP:1.7,          // D2: remaining Medi-Cal-side ramp; SNAP 2.0 + 1.7 + 1.3 baseline ≈ the DOC's $5B/yr plateau
   // Issues
   PRISON_DRIFT:0.22,        // %-of-capacity per month, Prop 36 pressure (CDCR Fall 2025 direction; exact level UNVERIFIED)
-  HOMELESS_BASE:-0.15,      // %/mo baseline decline (2025 AHAR: first-ever −2.8%/yr ≈ −0.23%/mo; conservative)
+  HOMELESS_BASE:0.08,       // ACT-1 %/mo baseline PRESSURE. The 2025 −2.8% was program-fueled, not free — in this model
+                            // rents, inflows and program sunsets push the count UP ~1%/yr unless the state keeps fueling
+                            // programs (surge $, EOs, statutes). Nothing improves because the governor exists.
   MC_DRIFT:-0.055,          // M enrollees/mo toward ~12M by 2029-30 under H.R.1 (LAO)
   MC_RECESSION:0.03,        // L6: M enrollees/mo ADDED during trough — recessions push people ONTO Medi-Cal
   // Politics
@@ -530,6 +538,7 @@ const MODEL_NOTES=[
   ["Reserve totals","LAO-narrow (~$20B) and administration-wide (~$28.8–35B) definitions legitimately differ. The dashboard shows both — 'how much do we have' is a contested question, not a fact."],
   ["Recall probability model","No published approval→recall mapping exists. Engine uses: qualification pressure builds when any funded actor is at existential opposition AND approval < 40."],
   ["Unemployment & housing production","Jan 2027 values are PROJECTED placeholders; verify vs EDD / HCD."],
+  ["Homelessness baseline & the statute/program split","Two gameplay models, flagged honestly. (1) The 2025 −2.8% PIT decline is VERIFIED history, but this engine treats it as program-fueled rather than free: with no state action the count drifts up ~1%/yr (rents, inflows, program sunsets), so every improvement on your watch traces to an appropriation, order, or statute you can point to. (2) Issue effects are split into PROGRAMS (executive orders, surge money — they fade monthly and can be enjoined) and STATUTES (signed bills, passed measures — permanent, shown as ⚖ ON THE BOOKS). No published coefficients exist for either; the split itself is the modeled claim: laws outlast press releases."],
   ["Cabinet backgrounds & weights","Every agency candidate is a SYNTHETIC_OFFICEHOLDER with a modeled résumé, and the résumé is load-bearing: a Finance director the LAO trusts adds credible dollars to every budget; a Receiver-team alumna at Corrections slows crowding; an ex-SEIU secretary at Labor cools strike odds; a YIMBY litigator at Housing moves production. The weights are design estimates — no published appointee-effect coefficients exist — but the mechanism (who runs the department changes what the department does) is the verified part."],
 ];
 
@@ -1284,7 +1293,10 @@ function newGame(cfg){
     issues:{homeless:BASELINE.homeless_count.v, mediCal:BASELINE.medi_cal.v, prison:BASELINE.prison_pct.v,
       insur:38, unemp:BASELINE.unemployment.v, grid:BASELINE.grid_margin.v, fireYtd:0,
       housingRate:9.2, housingCum:0, hsr:"seeking private capital", hsrStage:0, k12:BASELINE.k12_enroll.v,
-      homelessBoost:0, housingBoost:0, insurBoost:0, medicalBoost:0, prisonRelief:0},
+      homelessBoost:0, housingBoost:0, insurBoost:0, medicalBoost:0, prisonRelief:0,
+      // ACT-2: STATUTORY base — issue effects from enacted laws & passed measures. Never decays.
+      // Programs (EOs, surge money) fade and can be sued away; statutes stay on the books.
+      lawHousing:0, lawHomeless:0, lawInsur:0, lawMedical:0, lawPrison:0},
     actors:{}, leg:{senD:30,senR:10,asmD:60,asmR:19}, legStanding:0,
     bills:{pipeline:[], desk:[], signed:[], vetoed:[], enactedIds:[], deadSess:{}, outcomeLog:[]},
     measures:{pending:[], hostile:[]},
@@ -1301,7 +1313,8 @@ function newGame(cfg){
       snapLanded:false, laoBlast:false, disasterActive:null, sessionBillsDone:{},
       hr1Applied:0, gann:TUNING.GANN_HEADROOM0, marker:null, weakened:null, committeeChit:false,
       primaryBlitz:false, recallSurvived:false, tips:{}, fiscalEmergencyY:0, bsaLastY:0,
-      waiverCd:0, lastPulpit:-9, senVacancy:false, senFilled:false, surgeY:0, hsrTried:0},
+      waiverCd:0, lastPulpit:-9, senVacancy:false, senFilled:false, surgeY:0, hsrTried:0,
+      eoCd:{}, hiringFreezeY:0},
     hist:{approval:[], deficit:[], market:[], homeless:[], pc:[], insur:[], housing:[], medical:[], unemp:[]},
   };
   // actor init
@@ -1511,6 +1524,9 @@ function applyFx(g,fx,label,by){
     case "issue":{g.issues[fx.key]=(g.issues[fx.key]||0)+fx.d;
       const m={homelessBoost:"homeless",housingBoost:"housing",insurBoost:"insur",medicalBoost:"medical"}[fx.key];
       if(m)mark(m);break;}
+    case "law":{g.issues[fx.key]=(g.issues[fx.key]||0)+fx.d; // ACT-2: statutory effects land once and never decay
+      const lm={lawHomeless:"homeless",lawHousing:"housing",lawInsur:"insur",lawMedical:"medical"}[fx.key];
+      if(lm)mark(lm);break;}
     case "cov":cov(g,fx.src,fx.hl,fx.bd,fx.mn);break;
     case "approval":dAp(g,fx.d);break;
     case "insur":g.issues.insur=clamp(g.issues.insur+fx.d,0,100);mark("insur");break;
@@ -1747,16 +1763,19 @@ function endMonth(g){
 
 function driftIssues(g,d){
   const I=g.issues,M=g.market;
-  // homelessness: baseline gentle decline, recession pressure, housing & program boosts
-  let hPct=TUNING.HOMELESS_BASE+(M.mode==="trough"||M.mode==="correction"?0.35:0)-(I.homelessBoost*0.055)-(I.housingBoost*0.004);
-  if(g.actors.mayors>30)hPct-=0.04;
+  // ACT-1 homelessness: baseline pressure UP; only programs (decaying), statutes (permanent),
+  // housing production, and mayors who actually implement push it down. No free wins.
+  let hPct=TUNING.HOMELESS_BASE+(M.mode==="trough"||M.mode==="correction"?0.35:0)
+    -(I.homelessBoost*0.085)-((I.lawHomeless||0)*0.05)-((I.housingBoost+(I.lawHousing||0))*0.006);
+  if(g.actors.mayors>30)hPct-=0.06;
   I.homeless=Math.round(I.homeless*(1+hPct/100+RNG.norm(0,0.001)));
-  I.homelessBoost=Math.max(0,I.homelessBoost-0.06); // MECH-4: programs fade unless renewed
-  // housing production (thousands/mo) — APPT: the BCSH secretary's résumé is a standing boost
-  I.housingRate=clamp(9.2*(1+(I.housingBoost+cabPerk(g,"housing"))/100)*(M.mode==="trough"?0.7:M.mode==="correction"?0.85:1),4,20);
+  I.homelessBoost=Math.max(0,I.homelessBoost-0.06); // MECH-4: programs fade unless renewed — statutes don't
+  I.housingBoost*=0.99; // ACT-3: EO/program housing pushes fade slowly too; only law and production are forever
+  // housing production (thousands/mo) — statutes + programs + the BCSH secretary's résumé
+  I.housingRate=clamp(9.2*(1+(I.housingBoost+(I.lawHousing||0)+cabPerk(g,"housing"))/100)*(M.mode==="trough"?0.7:M.mode==="correction"?0.85:1),4,20);
   I.housingCum+=I.housingRate;
   // medi-cal glide toward 12M end-2029 under H.R.1 — L6: recessions push people ONTO the rolls
-  let mcDrift=TUNING.MC_DRIFT+I.medicalBoost*0.02+cabPerk(g,"medical"); // APPT: CalHHS operator slows the churn
+  let mcDrift=TUNING.MC_DRIFT+I.medicalBoost*0.02+(I.lawMedical||0)*0.02+cabPerk(g,"medical"); // APPT: CalHHS operator slows the churn
   if(M.mode==="trough"||M.mode==="correction"){mcDrift+=TUNING.MC_RECESSION;
     g.fiscal.deficit+=0.04; // CalFresh & caseload costs ride along
     if(!g.flags.mcRecessionNoted&&M.mode==="trough"){g.flags.mcRecessionNoted=true;
@@ -1764,11 +1783,11 @@ function driftIssues(g,d){
         "Medi-Cal enrollment is rising against the H.R.1 decline curve — every layoff feeds the caseload the federal law was shrinking. The cruel interaction, in one sentence: Washington cut the program's funding on the assumption of good times, and the times stopped being good. The state pays the difference, which is to say: you do.");}}
   I.mediCal=clamp(I.mediCal+mcDrift,11.5,15.2);
   I.medicalBoost=Math.max(0,I.medicalBoost-0.02);
-  // prison: Prop 36 upward drift minus relief — APPT: the CDCR secretary's population plans count monthly
-  I.prison=clamp(I.prison+TUNING.PRISON_DRIFT-(I.prisonRelief*0.09)-cabPerk(g,"prison")+RNG.norm(0,0.15),100,150);
+  // prison: Prop 36 upward drift minus relief — statutes (credits, closures) relieve permanently
+  I.prison=clamp(I.prison+TUNING.PRISON_DRIFT-((I.prisonRelief+(I.lawPrison||0))*0.09)-cabPerk(g,"prison")+RNG.norm(0,0.15),100,150);
   I.prisonRelief=Math.max(0,I.prisonRelief-0.02);
-  // insurance stability
-  I.insur=clamp(I.insur+clamp(I.insurBoost*0.22,0,3.2)-0.1,0,100); // MECH-5: big fixes now beat small ones
+  // insurance stability — programs give a fading push; statutes repair the market a little every month
+  I.insur=clamp(I.insur+clamp(I.insurBoost*0.22,0,3.2)+(I.lawInsur||0)*0.03-0.1,0,100); // MECH-5: big fixes now beat small ones
   I.insurBoost=Math.max(0,I.insurBoost-0.35);
   // grid: data-center & electrification demand growth erodes the planning margin every month;
   // procurement EOs and a CalEPA secretary who moves the permit queue (APPT perk) push back
@@ -2135,10 +2154,17 @@ function suspenseFile(g,label){
     `The Appropriations Committee met for ${RNG.int(9,14)} minutes. The chair read a list of bill numbers.${died.length?` Yours ${died.length>1?"were":"was"} on it: ${died.map(x=>x[0].num+" ("+x[0].t+")").join(", ")} — held, no vote recorded, no reasons given. The suspense file works like this every year and it has never once been about the merits.`:""}${lived.length?` Released to the floor: ${lived.map(x=>x[0].num).join(", ")}.`:""}`);
   g.bills.pipeline=g.bills.pipeline.filter(b=>b.stage!=="dead");
 }
-function billOutcome(g,b,res){ // LEG-2: one ledger for the tracker panel
+function billOutcome(g,b,res,eff){ // LEG-2: one ledger for the tracker panel
   g.bills.outcomeLog=(g.bills.outcomeLog||[]);
-  g.bills.outcomeLog.unshift({t:g.turn,num:b.num,title:b.t,res,sponsored:!!b.sponsored});
+  g.bills.outcomeLog.unshift({t:g.turn,num:b.num,title:b.t,res,eff:eff||"",sponsored:!!b.sponsored});
   if(g.bills.outcomeLog.length>14)g.bills.outcomeLog.pop();
+}
+function billEffSummary(fx){ // ACT-2: what a signature actually puts on the books
+  const parts=[];
+  if(fx.gf)parts.push(`GF ${fx.gf>0?"+":""}${fx.gf}B/yr`);
+  const nm={housingBoost:"housing",homelessBoost:"homelessness",insurBoost:"insurance",medicalBoost:"Medi-Cal",prisonRelief:"prison relief",grid:"grid",pensionCut:"pension"};
+  for(const[k,v]of Object.entries(fx.issue||{}))if(nm[k])parts.push(`${nm[k]} ${v>0?"+":""}${v} on the books`);
+  return parts.join(" · ");
 }
 function billDied(g,b,how){b.stage="dead";(g.bills.deadSess=g.bills.deadSess||{})[b.id]=turnDate(g.turn).y;billOutcome(g,b,how);}
 function sessionEnd(g,y){
@@ -2171,7 +2197,7 @@ function sessionEnd(g,y){
 }
 function enactBill(g,b,decision,silent){
   const fx=decision==="sign"?b.sign:b.veto;
-  billOutcome(g,b,decision==="sign"?(silent?"became law unsigned":"signed"):"vetoed");
+  billOutcome(g,b,decision==="sign"?(silent?"became law unsigned":"signed"):"vetoed",decision==="sign"?billEffSummary(fx):"");
   for(const[id,d]of Object.entries(fx.act||{}))dAct(g,id,d);
   if(fx.ap)dAp(g,fx.ap);
   if(decision==="sign"){
@@ -2180,12 +2206,13 @@ function enactBill(g,b,decision,silent){
     if(fx.tax)g.fiscal.taxSigned=true;
     if(b.id==="b_saas_repeal")g.flags.saasRepealed=true;
     if(b.id==="b_insur")g.issues.insur=clamp(g.issues.insur+(b.urgent?8:4),0,100); // the announcement effect: carriers price the signal
+    // ACT-2: statutes land in the LAW columns — permanent until repealed, unlike programs and EOs
     const iss=fx.issue||{};
-    if(iss.housingBoost)queue(g,b.urgent?2:5,{k:"issue",key:"housingBoost",d:iss.housingBoost},"housing program ("+b.num+")","you");
-    if(iss.homelessBoost)queue(g,b.urgent?2:6,{k:"issue",key:"homelessBoost",d:iss.homelessBoost},"homeless program ("+b.num+")","you");
-    if(iss.insurBoost)queue(g,b.urgent?2:6,{k:"issue",key:"insurBoost",d:iss.insurBoost},"insur program ("+b.num+")","you");
-    if(iss.medicalBoost)queue(g,b.urgent?2:4,{k:"issue",key:"medicalBoost",d:iss.medicalBoost},"medical program ("+b.num+")","you");
-    if(iss.prisonRelief)queue(g,b.urgent?2:6,{k:"issue",key:"prisonRelief",d:iss.prisonRelief},"prison relief ("+b.num+")","you");
+    if(iss.housingBoost)queue(g,b.urgent?2:5,{k:"law",key:"lawHousing",d:iss.housingBoost},"statute takes effect: housing ("+b.num+")","you");
+    if(iss.homelessBoost)queue(g,b.urgent?2:6,{k:"law",key:"lawHomeless",d:iss.homelessBoost},"statute takes effect: homelessness ("+b.num+")","you");
+    if(iss.insurBoost)queue(g,b.urgent?2:6,{k:"law",key:"lawInsur",d:iss.insurBoost},"statute takes effect: insurance ("+b.num+")","you");
+    if(iss.medicalBoost)queue(g,b.urgent?2:4,{k:"law",key:"lawMedical",d:iss.medicalBoost},"statute takes effect: Medi-Cal ("+b.num+")","you");
+    if(iss.prisonRelief)queue(g,b.urgent?2:6,{k:"law",key:"lawPrison",d:iss.prisonRelief},"statute takes effect: corrections ("+b.num+")","you");
     if(iss.grid)queue(g,b.urgent?2:8,{k:"grid",d:iss.grid},"grid procurement ("+b.num+")","you");
     if(fx.fedHeat)g.actors.fedadmin=clampA(g.actors.fedadmin-6);
     if(iss.pensionCut)g.fiscal.pension=Math.max(180,g.fiscal.pension-iss.pensionCut); // MECH-6: single write, no dead queue
@@ -2243,8 +2270,9 @@ function resolveMeasures(g){
     if(passed){
       for(const[id,d]of Object.entries(m.yesFx.act||{}))dAct(g,id,d);
       if(m.yesFx.issue&&m.yesFx.issue.pensionCut){g.fiscal.pension-=m.yesFx.issue.pensionCut;g.flags.pensionReformed=true;}
-      if(m.yesFx.issue&&m.yesFx.issue.housingBoost)queue(g,4,{k:"issue",key:"housingBoost",d:m.yesFx.issue.housingBoost});
-      if(m.yesFx.issue&&m.yesFx.issue.insurBoost)queue(g,4,{k:"issue",key:"insurBoost",d:m.yesFx.issue.insurBoost});
+      // ACT-2: voter-approved measures are law — permanent, and harder to repeal than anything you sign
+      if(m.yesFx.issue&&m.yesFx.issue.housingBoost)queue(g,4,{k:"law",key:"lawHousing",d:m.yesFx.issue.housingBoost},"measure takes effect: housing ("+m.t+")","you");
+      if(m.yesFx.issue&&m.yesFx.issue.insurBoost)queue(g,4,{k:"law",key:"lawInsur",d:m.yesFx.issue.insurBoost},"measure takes effect: insurance ("+m.t+")","you");
       if(m.yesFx.fiscal&&m.yesFx.fiscal.deficitCut)g.fiscal.deficit=Math.max(0,g.fiscal.deficit-m.yesFx.fiscal.deficitCut);
       m.passed=true;
     }else{dAp(g,-2);}
@@ -2589,7 +2617,7 @@ function buildCounterfactual(g){
   lines.push(`• The structural deficit was ~${fmtB(inh0,0)}/yr before you walked in. Baseline drift (spending +5.8%/yr vs revenue +4%) would have carried it to ~${fmtB(inh0+2.1*3+0.9*3)} by 2031 with no action at all. You leave ${g.fiscal.deficit<0?"a modeled SURPLUS of "+fmtB(Math.abs(g.fiscal.deficit)):fmtB(g.fiscal.deficit)}.`);
   if(g.flags.marketCorrected)lines.push(`• The market correction was never yours to control. The LAO called the enacted forecast "overly exuberant" in November 2025 — fourteen months before your inauguration. The correction would have arrived for any governor. What varied was the response.`);
   else lines.push(`• The market held through your term. The LAO's "overly exuberant" warning never cashed out — you governed in the good timeline, and some of your numbers are luck wearing a suit.`);
-  lines.push(`• Homelessness was already declining (−2.8% in 2025, the first drop ever recorded) before you took office. The baseline path reaches ~${Math.round(181934*Math.pow(0.982,4)).toLocaleString()} by 2031 with no state action. Judge your ${g.issues.homeless.toLocaleString()} against that, not against zero.`);
+  lines.push(`• Homelessness: the 2025 decline (−2.8%, the first ever recorded) was program-fueled, not gravity. With no state action the model's baseline drifts UP ~1% a year — ~${Math.round(181934*Math.pow(1.0096,4)).toLocaleString()} by 2031 — because rents, inflows and program sunsets do not take terms off. Every point below that in your ${g.issues.homeless.toLocaleString()} was bought: surge appropriations, executive orders, statutes, mayors who took your calls. Nothing here moved on its own.`);
   lines.push(`• H.R.1's cost shifts ($1.3B → $5B/yr) and the Medi-Cal enrollment decline toward ~12M were federal law before your election. No governor stops them; governors only choose what to backfill.`);
   lines.push(`• The verdict the report can actually render: some outcomes were never yours to control. The ones that were are listed above, priced in political capital.`);
   lines.push(`THE THESIS, FOR THE RECORD: the Governor of California is the most powerful executive in American state government — commander of a 227,500-person bureaucracy, holder of a veto that is never overridden, appointer of thousands — and still cannot amend a 1978 initiative, order an Attorney General, move a federal Receiver, schedule a capital-gains realization, or make 54 Assembly members want what they do not want. The office's power is agenda-setting plus persistence plus timing. Whatever you accomplished above, you accomplished with those three tools and no others. Whoever tells you otherwise is running for it.`);
@@ -2648,24 +2676,65 @@ const ACTIONS=[
   run:(g,c)=>{g.flags.judicialY=turnDate(g.turn).y;dAp(g,0.5);
     cov(g,"CalMatters","A justice, confirmed by three people you mostly don't control",
       "The Commission on Judicial Appointments — Chief Justice, Attorney General, senior presiding justice — confirmed your appellate pick. Note the Senate's absence from that sentence; judicial confirmation runs on a different track entirely, and one of the three votes belongs to a rival. The pick outlasts your term by design: twelve-year terms, retention elections, and no recalls of your calls.");}},
+ /* ACT-3: EOs are the fast, fading, litigable tool. Statutes stick; orders point the bureaucracy.
+    Every EO: an OPR implementation roll (the org chart executes it well or badly), a 10-month
+    cooldown per order (re-signing the same order is a press release), and — for the aggressive
+    ones — a real chance of a lawsuit that claws the effect back. */
  {id:"eo",nm:"Executive Order",cat:"Constitutional",slots:1,pc:2,
-  when:g=>true,
-  choices:g=>[{id:"homeless",nm:"Encampment resolution directive",d:"Direct agencies + condition state grants on encampment action. Effect in 1–3 turns.",cost:"Mayors bristle"},
-    {id:"housing",nm:"Surplus state land for housing",d:"Order DGS to inventory & offer state parcels. Effect in 2–3 turns.",cost:""},
-    {id:"grid",nm:"Emergency procurement of capacity",d:"Direct agencies toward storage contracts. Real effect: 6–12 turns. The CPUC is not yours.",cost:"Slow by design"},
-    {id:"insur",nm:"Wildfire hardening & data order",d:"State-lands fuel work + parcel-level risk data. Helps insurance stability at the margin, 3–6 turns.",cost:""}],
+  when:g=>{const cd=g.flags.eoCd||{};
+    return ["homeless","housing","grid","insur","ceqa","freeze","medical","streamline"].some(k=>!(cd[k]>g.turn))?true:"Every order is inside its cooldown — the bureaucracy is still executing the last round";},
+  choices:g=>{const cd=g.flags.eoCd||{};const y=turnDate(g.turn).y;
+    const C=(id,nm,d,cost)=>((cd[id]>g.turn)?null:{id,nm,d,cost});
+    return [
+      C("homeless","Encampment resolution directive","Direct agencies + condition state grants on encampment action. Program effect in 1–3 turns; fades unless renewed; ~25% chance of a civil-liberties suit.","Mayors bristle · suit risk"),
+      C("housing","Surplus state land for housing","Order DGS to inventory & offer state parcels. Program effect in 2–3 turns. Entitling and building land in the out-years.",""),
+      C("grid","Emergency procurement of capacity","Direct agencies toward storage contracts. Real effect: 6–12 turns. The CPUC is not yours.","Slow by design"),
+      C("insur","Wildfire hardening & data order","State-lands fuel work + parcel-level risk data insurers can actually price. Effect 3–6 turns.",""),
+      C("ceqa","Emergency CEQA streamlining (shelter & state-land housing)","Suspend review for shelter and state-parcel housing under emergency authority. Big, fast — and ~40% odds the order meets a judge.","Enviros −8 · HIGH suit risk"),
+      g.flags.hiringFreezeY===y?null:C("freeze","Hiring freeze & vacancy sweep","Freeze non-critical hiring, sweep funded vacancies. Real money (−$0.2–0.4B/yr), and SEIU treats it as a contract fight. Once per year.","SEIU −6 · once/yr"),
+      C("medical","Medi-Cal enrollment simplification order","Order DHCS to auto-verify with existing state data — keeps eligible people from churning off. Washington reads it as defiance; ~20% audit-suit risk.","Fed heat · suit risk"),
+      C("streamline","Regulatory streamlining review","Order every agency to publish permit clocks and kill two rules per new one. Business notices; a little housing and insurance relief arrives with the paperwork.","Chamber +5"),
+    ].filter(Boolean);},
   run:(g,c)=>{
-    const lag={homeless:2,housing:3,grid:9,insur:4}[c];
-    if(c==="homeless"){queue(g,lag,{k:"issue",key:"homelessBoost",d:3});const mayorHelp=g.player.bg==="mayor";
-      if(!mayorHelp)dAct(g,"mayors",-4);else queue(g,lag,{k:"issue",key:"homelessBoost",d:2});
+    (g.flags.eoCd=g.flags.eoCd||{})[c]=g.turn+10; // cooldown
+    const r=roll(g,"OPR",0.1,0); // implementation: the 227,500-person question
+    const eff=r.ok?1:0.6;
+    const impl=r.ok?"":" Implementation ran into the org chart — acting deputies, missed memos, a county that read the order differently — and delivered a fraction of the design.";
+    const suit=(key,p,dmg)=>{if(RNG.chance(p))queue(g,RNG.int(3,6),{k:"fn",fn:"_eoSuit",key,dmg},"EO challenged in court","world");};
+    if(c==="homeless"){const mayorHelp=g.player.bg==="mayor";
+      queue(g,2,{k:"issue",key:"homelessBoost",d:Math.round((4+(mayorHelp?2:0))*eff*10)/10},"encampment directive standing up","you");
+      if(!mayorHelp)dAct(g,"mayors",-4);
+      suit("homelessBoost",0.25,2);
       cov(g,"CalMatters","Executive order targets encampments — with grant strings attached",
-        (mayorHelp?"The mayors' club takes your calls — LOCAL IMPLEMENTATION means this one actually gets executed rather than litigated. ":"")+"An EO cannot make law, spend unappropriated money, or commandeer a city. What it can do: point 227,500 state employees in one direction and make grant money conditional. Results, if any, show up in the count with a lag.");}
-    else if(c==="housing"){queue(g,lag,{k:"issue",key:"housingBoost",d:4});
-      cov(g,"AP","State land offered for housing by executive order","DGS manages 37 million square feet and a long tail of surplus parcels. Ordering the inventory is instant; entitling and building on it is not. The units land in the out-years — governing is a lag business.");}
-    else if(c==="grid"){queue(g,lag,{k:"grid",d:3});
-      cov(g,"CalMatters","Procurement order signed; electrons to follow eventually","The order directs agencies toward storage capacity. The CPUC — fixed-term commissioners, quasi-judicial — moves on its own clock. If the lights stay on in September 2029, this unglamorous Tuesday is why. No one will remember it.");}
-    else{queue(g,lag,{k:"issue",key:"insurBoost",d:5});
-      cov(g,"CalMatters","Hardening order aims at the insurance spiral's inputs","Fuel breaks on state land and parcel-level risk data insurers can actually price. You cannot order the Insurance Commissioner to approve anything — but you can change what the actuaries see.");}}},
+        (mayorHelp?"The mayors' club takes your calls — LOCAL IMPLEMENTATION means this one actually gets executed rather than litigated. ":"")+"An EO cannot make law, spend unappropriated money, or commandeer a city. What it can do: point 227,500 state employees in one direction and make grant money conditional. Results show up in the count with a lag — and fade when the pressure does."+impl);}
+    else if(c==="housing"){queue(g,3,{k:"issue",key:"housingBoost",d:Math.round(4*eff*10)/10},"surplus-land pipeline (EO)","you");
+      cov(g,"AP","State land offered for housing by executive order","DGS manages 37 million square feet and a long tail of surplus parcels. Ordering the inventory is instant; entitling and building on it is not. The units land in the out-years — governing is a lag business."+impl);}
+    else if(c==="grid"){queue(g,9,{k:"grid",d:Math.round(3*eff*10)/10},"storage procurement (EO)","you");
+      cov(g,"CalMatters","Procurement order signed; electrons to follow eventually","The order directs agencies toward storage capacity. The CPUC — fixed-term commissioners, quasi-judicial — moves on its own clock. If the lights stay on in September 2029, this unglamorous Tuesday is why. No one will remember it."+impl);}
+    else if(c==="insur"){queue(g,4,{k:"issue",key:"insurBoost",d:Math.round(5*eff*10)/10},"hardening & risk-data order","you");
+      cov(g,"CalMatters","Hardening order aims at the insurance spiral's inputs","Fuel breaks on state land and parcel-level risk data insurers can actually price. You cannot order the Insurance Commissioner to approve anything — but you can change what the actuaries see."+impl);}
+    else if(c==="ceqa"){
+      queue(g,2,{k:"issue",key:"homelessBoost",d:Math.round(3*eff*10)/10},"CEQA-exempt shelter siting (EO)","you");
+      queue(g,3,{k:"issue",key:"housingBoost",d:Math.round(3*eff*10)/10},"CEQA-exempt state-land housing (EO)","you");
+      dAct(g,"enviro",-8);dAct(g,"yimby",5);
+      suit("housingBoost",0.4,3);
+      cov(g,"AP","Governor suspends CEQA review for shelters and state-land housing",
+        "The most aggressive use of emergency authority since the pandemic: environmental review, suspended by signature, for a defined class of projects. The building trades cheered; three environmental groups shared a single press release with the word 'lawless' in it; the complaint is being drafted before the ink dries. Speed now, court later — the trade every governor eventually makes."+impl);}
+    else if(c==="freeze"){g.flags.hiringFreezeY=turnDate(g.turn).y;
+      const save=r.ok?0.4:0.2;
+      g.fiscal.deficit=Math.max(-18,g.fiscal.deficit-save);dAct(g,"seiu",-6);
+      cov(g,"CalMatters",`Hiring freeze ordered — ${fmtB(save)}/yr swept from funded vacancies`,
+        "The oldest fiscal EO in the book: freeze non-critical hiring and sweep the vacancy savings the departments were quietly banking. SEIU filed an unfair-practice charge by lunch; the DOF kept the receipts. "+(r.ok?"A disciplined sweep — the full number holds.":"The exemption list grew daily; half the savings walked out through the loopholes."));}
+    else if(c==="medical"){queue(g,3,{k:"issue",key:"medicalBoost",d:Math.round(0.2*eff*100)/100},"auto-verification order (DHCS)","you");
+      dAct(g,"fedadmin",-3);dAct(g,"hosp",4);
+      suit("medicalBoost",0.2,0.1);
+      cov(g,"CalMatters","Order: Medi-Cal eligibility auto-verified from state data",
+        "Churn — eligible people losing coverage over paperwork — is the quiet engine of the enrollment decline. The order points DHCS at data the state already holds. CMS 'noted concerns,' which is federal for 'we may sue you over this later.'"+impl);}
+    else{queue(g,5,{k:"issue",key:"housingBoost",d:Math.round(1*eff*10)/10},"permit-clock rule (EO)","you");
+      queue(g,5,{k:"issue",key:"insurBoost",d:Math.round(2*eff*10)/10},"streamlining review lands","you");
+      dAct(g,"chamber",5);
+      cov(g,"CalMatters","Every agency ordered to publish its permit clock",
+        "Unglamorous, cumulative, and the Chamber's favorite thing you've done: shot clocks on permits, sunset reviews on rules, a public dashboard nobody will read but everybody will cite. The effects are small and arrive with the paperwork. They also, unlike the press conference, exist."+impl);}}},
  {id:"emergency",nm:"Declare State of Emergency",cat:"Constitutional",slots:1,pc:1,
   when:g=>g.flags.disasterActive||g.fiscal.deficit>20?true:"Requires a qualifying emergency (disaster, or fiscal for BSA purposes)",
   choices:g=>{const out=[];
@@ -3035,6 +3104,18 @@ LAG_FNS._confirm=(g,fx)=>{
       (g.player.party==="R"?"A Democratic Senate Rules Committee sat on a Republican governor's nominee for months, then let it die of exposure. The message was for you, not the nominee. ":"Senate Rules sat on it, leaked from it, and finally starved it. ")+
       "The nominee withdrew 'to spend time with family,' the Capitol's oldest cause of death. The post is VACANT — an acting deputy runs it (badly) until you fill it.");}
 };
+/* ACT-3: the lawsuit an aggressive EO buys. ~45% the state wins; otherwise the effect is clawed back. */
+LAG_FNS._eoSuit=(g,fx)=>{
+  if(RNG.chance(0.45)){
+    cov(g,"Politico","The executive order survives its day in court",
+      "A superior-court judge declined to enjoin it: emergency authority, properly invoked, narrowly drawn. The plaintiffs will appeal, the order keeps executing, and your counsel gets one framed page for the wall. The next order will be drafted braver.");
+  }else{
+    g.issues[fx.key]=Math.max(0,(g.issues[fx.key]||0)-fx.dmg);
+    dAp(g,-0.5);
+    cov(g,"AP","Court enjoins the executive order — the effect unwinds",
+      "The judge's order runs four pages; the operative word is 'exceeded.' The programs the EO stood up are being wound down mid-stride, the agencies are re-reading their authorities, and the editorial boards are enjoying the word 'overreach.' What a statute would have kept, a signature could not. The Legislature remains open for business.");
+  }
+};
 LAG_FNS._defederalize=g=>{g.flags.guardFederalized=false;
   cov(g,"AP","Washington releases the Guard",
     "The federalization order lapsed without ceremony — a two-line memo, four thousand soldiers back under state command, and no acknowledgment that anything had been proven by any of it. Your adjutant general has resumed issuing orders instead of receiving them.");};
@@ -3337,7 +3418,7 @@ function renderPlay(){
   const apDelta=g.hist.approval.length>=2?g.approval-g.hist.approval[g.hist.approval.length-2]:0;
   const tab=UI.tab||"overview";
   let content="";
-  if(tab==="overview")content=`<div class="ov-col">${tipsBanner(g)}${statTiles(g,apDelta)}${budgetDesk(g)}${transitionPanel(g)}${cardPanel(g)}${setpiece(g,d)}${hsrTracker(g)}${memoPanel(g)}${legTrackerPanel(g)}${agendaPanel(g)}${promiseStrip(g)}${headlinesPanel(g)}</div>`;
+  if(tab==="overview")content=`<div class="ov-col">${tipsBanner(g)}${statTiles(g,apDelta)}${seasonPanel(g)}${budgetDesk(g)}${transitionPanel(g)}${cardPanel(g)}${setpiece(g,d)}${hsrTracker(g)}${memoPanel(g)}${legTrackerPanel(g)}${agendaPanel(g)}${promiseStrip(g)}${headlinesPanel(g)}</div>`;
   else if(tab==="state")content=`<div class="ov-col" style="max-width:1200px">${chartExplorer(g)}<div class="two-col">${fiscalPanel(g)}${issuesPanel(g)}</div></div>`;
   else if(tab==="politics")content=`<div class="two-col">${politicalPanel(g)}${promisesPanel(g)}</div>`;
   else content=`<div class="news-col">${masthead(g)}${feedPanel(g)}</div>`;
@@ -3456,7 +3537,8 @@ function issuesPanel(g){
     <div class="kv"><span class="k">Grid reserve margin</span><span class="v ${I.grid<15?"warn":""}">${I.grid.toFixed(0)}%</span></div>
     <div class="kv"><span class="k">Wildfire acres YTD</span><span class="v">${I.fireYtd}k</span></div>
     <div class="kv"><span class="k">HSR</span><span class="v" style="font-size:10px;white-space:normal">${I.hsr}</span></div>
-    <div class="kv"><span class="k">K-12 enrollment</span><span class="v">${I.k12.toFixed(2)}M ▼</span></div></div>`;
+    <div class="kv"><span class="k">K-12 enrollment</span><span class="v">${I.k12.toFixed(2)}M ▼</span></div>
+    ${(I.lawHousing||I.lawHomeless||I.lawInsur||I.lawMedical||I.lawPrison)?`<div class="hr"></div><div class="subtle" style="cursor:help" title="Statutory effects from bills you signed and measures the voters passed. Permanent — unlike programs and executive orders, which fade or get enjoined.">⚖ ON THE BOOKS: ${[["housing",I.lawHousing],["homelessness",I.lawHomeless],["insurance",I.lawInsur],["Medi-Cal",I.lawMedical],["prison relief",I.lawPrison]].filter(x=>x[1]).map(x=>`${x[0]} ${x[1]>0?"+":""}${Math.round(x[1]*100)/100}`).join(" · ")}</div>`:""}</div>`;
 }
 function politicalPanel(g){
   const L=g.leg;
@@ -3535,7 +3617,7 @@ function legTrackerPanel(g){
   return `<div class="panel"><h3>Bill Tracker <span class="subtle">${pipe.length} in the building · ${desk.length} on the desk</span></h3>
   ${pipe.length?pipe.map(stageRow).join(""):`<div class="subtle">Nothing of yours is in the building. SPONSOR LEGISLATION opens the ${d.y} slate${d.m>6?" in January (introduction deadline passed)":""}.</div>`}
   ${desk.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">ON THE DESK — sign or veto by Sept 30</div>${desk.map(b=>`<div class="lt-meta">▸ ${b.num} ${b.t}${b.sponsored?' <span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">YOURS</span>':""}${b.fromLeg?' <span class="subtle" style="font-size:9px">(the Legislature’s)</span>':""}</div>`).join("")}`:""}
-  ${log.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">RECENT OUTCOMES</div>${log.map(o=>`<div class="lt-meta"><span class="due">[${turnDate(o.t).label}]</span> ${o.num} ${esc(o.title)} — <span style="color:${o.res==="signed"?"var(--good)":o.res==="vetoed"?"var(--red)":o.res==="became law unsigned"?"var(--ink2)":"var(--serious)"}">${o.res}</span>${o.sponsored?' <span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">YOURS</span>':""}</div>`).join("")}`:""}
+  ${log.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">RECENT OUTCOMES</div>${log.map(o=>`<div class="lt-meta"><span class="due">[${turnDate(o.t).label}]</span> ${o.num} ${esc(o.title)} — <span style="color:${o.res==="signed"?"var(--good)":o.res==="vetoed"?"var(--red)":o.res==="became law unsigned"?"var(--ink2)":"var(--serious)"}">${o.res}</span>${o.eff?` <span class="subtle" style="font-size:9.5px">(${esc(o.eff)})</span>`:""}${o.sponsored?' <span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">YOURS</span>':""}</div>`).join("")}`:""}
   </div>`;
 }
 /* F2: the Chief of Staff briefing */
@@ -3603,12 +3685,41 @@ function budgetDesk(g){
 }
 /* The HSR project tracker — a promise you can watch yourself earn (or not) */
 function hsrTracker(g){
-  if(!g.player.promises.includes("finish_hsr")||g.flags.hsrKilled)return "";
+  if(g.flags.hsrKilled)return "";
+  const promised=g.player.promises.includes("finish_hsr");
   const st=g.issues.hsrStage;
+  if(!promised&&st===0)return ""; // no promise, no work started — the project idles off-screen
   const steps=["Court private capital","Lock cap-and-invest collateral","Fund Merced–Bakersfield"];
-  return `<div class="panel"><h3>🚄 High-Speed Rail — the promise, in stages <span class="subtle">${st}/3</span></h3>
+  const act=ACTIONS.find(a=>a.id==="hsrpush");
+  const gate=act.when(g);
+  const perk=cabPerk(g,"hsr");
+  return `<div class="panel"><h3>🚄 High-Speed Rail — ${promised?"the promise, in stages":"the project you started"} <span class="subtle">${st}/3</span></h3>
   <div class="hsr-steps">${steps.map((t,i)=>`<div class="hsr-step ${st>i?"done":st===i?"cur":""}"><span class="hsr-dot">${st>i?"✓":i+1}</span>${t}</div>`).join('<div class="hsr-line"></div>')}</div>
-  <div class="subtle" style="font-size:11px;margin-top:5px">${st>=3?"Kept. The train is being built because you made three separate decisions to build it.":"Current status: "+esc(g.issues.hsr)+" — ADVANCE HIGH-SPEED RAIL is the action. Nothing here happens by itself."}</div></div>`;
+  <div class="subtle" style="font-size:11px;margin-top:5px">${st>=3?"Kept. The train is being built because you made three separate decisions to build it.":"Current status: "+esc(g.issues.hsr)+" — nothing here happens by itself."}</div>
+  ${st<3?(gate===true
+    ?`<button class="primary" data-act="doaction" data-id="hsrpush" style="margin-top:7px" ${g.slots<1||g.pc<3?"disabled":""}>🚄 ADVANCE HIGH-SPEED RAIL — 1 slot · 3 PC${perk?` · CalSTA rolodex +${Math.round(perk*100)}%`:""}</button>${g.slots<1?'<div class="subtle" style="font-size:10px">No slots left this month.</div>':g.pc<3?'<div class="subtle" style="font-size:10px">Not enough PC.</div>':""}`
+    :`<div class="subtle" style="color:var(--warn);margin-top:5px">⏸ ${esc(String(gate))}</div>`):""}
+  </div>`;
+}
+/* ACT-4: the constitutional calendar, impossible to miss. January and May stop being menu items. */
+function seasonPanel(g){
+  if(g.over||g.phase!=="play")return "";
+  const d=turnDate(g.turn),B=g.fiscal.budget;
+  if(d.m===1&&!B.proposed){
+    const can=g.slots>=3;
+    return `<div class="setpiece season-crit"><h3>⚠ THE JANUARY BUDGET — CONSTITUTIONALLY DUE BY THE 10TH</h3>
+    <p style="font-size:13px;margin:4px 0">The structural gap stands at <b class="num" style="color:var(--critical)">${fmtB(g.fiscal.deficit)}</b> a year. The document due to the Legislature this month is the most consequential thing you will do all year — every cut, tax, reserve draw and gimmick gets priced by a constituency, and the LAO grades the whole thing in February.</p>
+    ${can?`<button class="primary big-cta" data-act="doaction" data-id="budget">📋 OPEN THE BUDGET BUILDER — takes all 3 slots</button>`
+      :`<div class="subtle" style="color:var(--warn)">You have already spent ${3-g.slots} of January's 3 action slots — the builder needs all three. Miss the month and the Legislature writes the budget without you.</div>`}
+    <div class="subtle" style="font-size:10.5px;margin-top:5px">Skip it and: a first-in-forty-years LAO rebuke (−4 approval), −8 PC, and every fiscal fight this year starts from Rivas and Limón's document instead of yours.</div></div>`;
+  }
+  if(d.m===5&&B.proposed&&!B.revised){
+    return `<div class="setpiece season-warn"><h3>📅 MAY REVISION WEEK — the public reckoning with April's receipts</h3>
+    <p style="font-size:12.5px;margin:4px 0">The constitutional rhythm demands a mid-course correction in public. Mark the numbers down honestly, gamble on holding January's line — or skip the ritual and let the LAO write the June story about a budget hiding from its own arithmetic.</p>
+    ${g.slots>=2?`<button class="primary big-cta" data-act="doaction" data-id="mayrev">📉 TAKE THE MAY REVISION — 2 slots · 3 PC</button>`
+      :`<div class="subtle" style="color:var(--warn)">Needs 2 slots; you have ${g.slots} left this month.</div>`}</div>`;
+  }
+  return "";
 }
 /* The transition set-piece: staff the administration, name by name (turns 1–3) */
 function transitionPanel(g){
