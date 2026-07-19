@@ -712,8 +712,8 @@ const PROMISES=[
  {id:"no_taxes",t:"Balance the budget without new taxes",cons:"chamber",consNm:"CalChamber & moderates",
   fx:{chamber:20,progs:-20,mods:10},target:"Structural deficit ≤ $5B at handoff, zero new taxes signed",
   note:"Locks out the 2/3 tax path politically, not legally."},
- {id:"fix_insurance",t:"Fix the insurance market in year one",cons:"localgov",consNm:"Homeowners & local officials",
-  fx:{energy:5},target:"Insurance stability index ≥ 70 by Dec 2027",
+ {id:"fix_insurance",t:"Fix the insurance market by the midterm",cons:"localgov",consNm:"Homeowners & local officials",
+  fx:{energy:5},target:"Insurance stability index ≥ 70 by Dec 2028",
   note:"The Insurance Commissioner is independently elected. You have no direct authority over rates. Good luck."},
  {id:"homeless_third",t:"Cut homelessness by a third",cons:"mayors",consNm:"Big-city mayors & the public",
   fx:{mayors:15,localgov:10},target:"PIT count ≤ 121,300 (from 181,934)",
@@ -2098,7 +2098,12 @@ function driftIssues(g,d){
   let hPct=TUNING.HOMELESS_BASE+(M.mode==="trough"||M.mode==="correction"?0.35:0)
     -(I.homelessBoost*0.085)-((I.lawHomeless||0)*0.05)-((I.housingBoost+(I.lawHousing||0))*0.006);
   if(g.actors.mayors>30)hPct-=0.06;
-  I.homeless=Math.round(I.homeless*(1+hPct/100+RNG.norm(0,0.001)));
+  // V3 audit: stacked programs used to compound unboundedly — max effort drove the count to ~1,000
+  // people, which no state has ever done. Best-case bend is capped at −1.1%/mo (≈ −12%/yr, still
+  // 4× the best program-fueled year on record) and the count floors at 75,000 — the chronic,
+  // service-resistant population that money alone has never reached. The −1/3 promise stays keepable.
+  hPct=Math.max(hPct,-1.1);
+  I.homeless=Math.max(75000,Math.round(I.homeless*(1+hPct/100+RNG.norm(0,0.001))));
   // REAL-HML-1: programs SHELTER people before they house them — the unsheltered share moves first
   // and fastest (it's also what the public sees, so approval keys off it harder than off the count).
   I.unshelt=clamp((I.unshelt||66)+0.08-(I.homelessBoost*0.10)-((I.lawHomeless||0)*0.04),38,80);
@@ -2387,6 +2392,11 @@ const BUDGET_MIXES=[
   mix:{cuts:0,taxes:0,reserves:0,gimmicks:2,rosy:15}},
 ];
 /* Live preview math shared by the builder UI and the engine — one source of truth. */
+/* V3 audit: the reliability haircut was the single biggest hidden number in the game — budgets
+   landed at 60¢ on the dollar and the UI never said so. It is now (a) slightly gentler at baseline
+   (0.68 — implementation slippage is real, but so are departments that mostly do what the Budget
+   Act says), (b) visibly moved by legislative standing, and (c) SHOWN, in the builder and the memo. */
+function budgetRel(g){return clamp(0.68+g.legStanding/300,0.35,0.95);}
 function budgetPreview(g,mx){
   const dofCred=cabPerk(g,"budget"); // APPT: a Finance director the LAO trusts makes the same numbers read better
   const cred=mx.cuts+mx.taxes*0.9+mx.reserves*0.8+mx.gimmicks*0.35+dofCred;
@@ -2465,7 +2475,7 @@ function enactBudget(g,late){
     if(mx.gimmicks>=4){g.fiscal.deficit=Math.max(0,g.fiscal.deficit-4);
       queue(g,10,{k:"deficit",d:4},"Deferral repayment comes due","you");}
   }
-  const rel=clamp(0.6+g.legStanding/300,0.35,0.95);
+  const rel=budgetRel(g);
   let finalSolve=solved*rel+(B.revised?1.5:0);
   // REAL-2: the CONFERENCE COMMITTEE writes its own changes into your budget before it reaches you
   const changes=[];
@@ -2969,9 +2979,12 @@ function promiseStates(g){
       case "no_taxes":{const ok=!fi.taxSigned;progress=ok?clamp(1-fi.deficit/35,0,1)*(fi.deficit<=5?1:0.8):0;
         state=!ok?"broken":(g.turn>=47&&fi.deficit<=5?"kept":"open");
         detail=ok?`No new taxes signed. Deficit ${fmtB(fi.deficit)} (target ≤ $5B)`:"You signed a tax. CalChamber's memory is long.";break;}
+      // V3 audit: the Dec 2027 deadline was UNKEEPABLE — max effort (EO + special session + bills
+      // pushed every month) measured median 56, max 66 of the 70 needed, because session bills land
+      // in September and take effect Jan 1. Two years is the realistic floor for market repair.
       case "fix_insurance":{progress=clamp(I.insur/70,0,1);
-        state=g.turn>12?(g.hist.insur[11]>=70?"kept":"broken"):"open";
-        detail=`Stability index ${Math.round(I.insur)}/70 — deadline Dec 2027`;break;}
+        state=g.turn>24?(g.hist.insur[23]>=70?"kept":"broken"):"open";
+        detail=`Stability index ${Math.round(I.insur)}/70 — deadline Dec 2028`;break;}
       case "homeless_third":{progress=clamp((181934-I.homeless)/(181934-121300),0,1);
         state=g.turn>=47?(I.homeless<=121300?"kept":"broken"):"open";
         detail=`${I.homeless.toLocaleString()} → target 121,300`;break;}
@@ -3741,7 +3754,10 @@ LAG_FNS._waiverResp=(g,fx)=>{
   const k=fx.kind,ladder=g.fedLadder||0;
   const base={medicaid:0.42,snap:0.36,disaster:0.5}[k]||0.4;
   const diff=0.52-base; // roll() adds ~0.22+FED*0.055; diff centers the same odds the choices displayed
-  const r=roll(g,"FED",diff,(g.player.bg==="fed"?0.18:0)+(g.actors.deleg||0)/300+(g.actors.fedadmin||0)/300-ladder*0.04);
+  // V3 audit: repeat requests used to be pure coin flips (56% denied, forever). Real waiver shops
+  // learn from denial letters — each prior denial thickens the refile (+5%, capped at +15%).
+  const learned=Math.min(((g.flags.waiverDenials||{})[k]||0)*0.05,0.15);
+  const r=roll(g,"FED",diff,(g.player.bg==="fed"?0.18:0)+(g.actors.deleg||0)/300+(g.actors.fedadmin||0)/300-ladder*0.04+learned);
   const apply=()=>{
     if(k==="medicaid"){g.fiscal.deficit=Math.max(-18,g.fiscal.deficit-1.2);queue(g,2,{k:"issue",key:"medicalBoost",d:0.3},"waiver flexibility phasing in","you");}
     else if(k==="snap"){g.fiscal.deficit=Math.max(-18,g.fiscal.deficit-(g.flags.snapLanded?1.0:0.5));}
@@ -3757,8 +3773,9 @@ LAG_FNS._waiverResp=(g,fx)=>{
       `The approval letter came with a side letter: quiet cooperation on two enforcement matters, a joint press availability your base will hate, and language your general counsel calls "unusually personal." You paid it — 5 PC, the progressives' trust, and the federal administration now holds a marker with your name on it. The relief is real. So is the receipt.`);}
   else{
     dAct(g,"fedadmin",-2);dAp(g,-0.5);
+    g.flags.waiverDenials=g.flags.waiverDenials||{};g.flags.waiverDenials[k]=(g.flags.waiverDenials[k]||0)+1;
     cov(g,"Politico",`Denied: ${{medicaid:"CMS rejects the Medi-Cal waiver",snap:"USDA declines the error-rate appeal",disaster:"FEMA passes on the cost-share memorandum"}[k]} — two lines, no reasons`,
-      `Months of technical work, a ${ladder>=3?"briefing book of your public fights, ":""}and a denial that quotes no statute. The research file models this administration as adversarial at baseline and 'largely unresponsive to your behavior'; the model remains undefeated. The file can be reopened in six months. The deficit cannot.`);}
+      `Months of technical work, a ${ladder>=3?"briefing book of your public fights, ":""}and a denial that quotes no statute. The research file models this administration as adversarial at baseline and 'largely unresponsive to your behavior'; the model remains undefeated. The file can be reopened in six months — thicker, with this denial letter annotated line by line, which is how waiver shops actually win these. The deficit cannot wait, but it will.`);}
 };
 /* SHELF-2: the Commission hearing — two of three votes confirm, and the AG's vote is theirs alone. */
 LAG_FNS._judconfirm=(g,fx)=>{
@@ -4388,6 +4405,11 @@ function buildMemo(g){
   if(d.y===2030&&d.m<=5&&g.flags.ltgovHostile&&!g.flags.primaryBlitz)out.push("The Lieutenant Governor is running and your primary is in June. PRIMARY CAMPAIGN BLITZ is sitting there. Incumbents who skip it join a support group.");
   if(g.pc>60&&g.slots===3)out.push(`You're sitting on ${g.pc} PC and a full slate of actions. Capital unspent is capital decaying — the honeymoon math never improves.`);
   if(g.pc<12&&(g.flags.barnstormCd||0)<=g.turn)out.push(`Political capital is down to ${g.pc} — you can't afford your own agenda. BARNSTORM THE STATE converts a road month into chits (town halls, the donor circuit, or the counties), and an under-scheduled month quietly regenerates more than a frantic one.`);
+  // V3 audit: the DOF Director's path check — the hidden numbers (reliability, the real tax count,
+  // the drift) said out loud, every month the gap is serious. This is the "help" layer: deterministic,
+  // in-world, and it teaches the machine instead of playing it for you.
+  if(g.fiscal.deficit>10){const tv=voteModel(g,false,{tax:true});const taxOk=tv.asm>=54&&tv.sen>=27;
+    out.push(`DOF's path check: the gap is ${fmtB(g.fiscal.deficit)} and grows ~$3–4B a year on its own (spending drift, H.R.1, pension rates) — treading water is losing. Budget solutions land at ~${Math.round(budgetRel(g)*100)}¢ on the dollar at your standing (${Math.round(g.legStanding)>=0?"+":""}${Math.round(g.legStanding)}); NEGOTIATE WITH LEADERSHIP raises the rate. The ⅔ tax vote is ${taxOk?`WINNABLE today — Asm ${tv.asm}/54, Sen ${tv.sen}/27; propose revenue while the count holds`:`SHORT today (Asm ${tv.asm}/54, Sen ${tv.sen}/27) — durable revenue means warming the moderates, or the ballot`}.`);}
   if(g.fiscal.deficit>32){const revTools=[["revenforce","FTB ENFORCEMENT SPRINT"],["revfedsweep","FEDERAL REIMBURSEMENT SWEEP"],["revamnesty","TAX AMNESTY"],["revsurplus","SURPLUS PROPERTY SALE"]].filter(([id])=>{const a=ACTIONS.find(x=>x.id===id);return a&&a.when(g)===true;}).map(([,n])=>n);
     if(revTools.length)out.push(`The gap is ${fmtB(g.fiscal.deficit)} and no 2/3 tax vote exists. Revenue you can raise WITHOUT the Legislature: ${revTools.join(", ")}. Enforcement and reimbursements are ongoing money; amnesties and asset sales are one-time — they boomerang in twelve months, priced honestly.`);
     if(g.measures.pending.length<3)out.push(`Or go AROUND the building entirely: QUALIFY A BALLOT MEASURE. Split roll ($4B/yr), the services swap ($6B/yr), oil severance ($1.5B/yr) — none of them need 54 votes. They need 50%+1 of the voters, ~$9 a signature, and the nerve.${g.player.chest<8?` One problem: a drive costs $8–12M and the war chest holds $${g.player.chest}M. FUNDRAISE first.`:""}`);}
@@ -4415,7 +4437,7 @@ function chartExplorer(g){
     medical:{nm:"Medi-Cal enrollment",arr:g.hist.medical,color:"var(--violet)",fmt:v=>v.toFixed(1)+"M",
       refs:P.includes("protect_medical")?[{v:13.5,label:"YOUR PROMISE",color:"var(--yellow)"},{v:12.5,label:"H.R.1 path",color:"var(--critical)"}]:[{v:12.5,label:"H.R.1 path",color:"var(--critical)"}],markers:g.markers.medical},
     insur:{nm:"Insurance stability",arr:g.hist.insur,color:"var(--aqua)",fmt:v=>Math.round(v),
-      refs:P.includes("fix_insurance")?[{v:70,label:"YOUR PROMISE (Dec '27)",color:"var(--yellow)"}]:[],markers:g.markers.insur},
+      refs:P.includes("fix_insurance")?[{v:70,label:"YOUR PROMISE (Dec '28)",color:"var(--yellow)"}]:[],markers:g.markers.insur},
     pc:{nm:"Political Capital",arr:g.hist.pc,color:"var(--violet)",fmt:v=>Math.round(v),refs:[]},
   };
   const c=CHARTS[sel]||CHARTS.deficit;
@@ -4655,8 +4677,16 @@ function builderModal(g){
 }
 function builderPreviewHTML(g,mx){
   const pv=budgetPreview(g,mx);
+  // V3 audit: the DOF Director's honest math — what this mix will ACTUALLY do, before you propose it
+  const rel=budgetRel(g);
+  const tv=voteModel(g,false,{tax:true});
+  const taxOk=tv.asm>=54&&tv.sen>=27;
+  const landing=(mx.cuts+mx.reserves+(mx.taxes>0&&taxOk?mx.taxes:0))*rel;
+  const gapAfter=Math.max(0,g.fiscal.deficit-landing);
   return `<div class="kv"><span class="k">Claimed solutions</span><span class="v">${fmtB(pv.claimed,0)} of ${fmtB(g.fiscal.deficit,1)}</span></div>
   <div class="kv"><span class="k">LAO-credible portion${pv.dofCred?` <span class="subtle">(incl. +${fmtB(pv.dofCred)} — your Finance director's word is worth money)</span>`:""}</span><span class="v ${pv.ratio>0.55?"good":pv.ratio>0.3?"warn":"bad"}">${fmtB(pv.cred,1)}</span></div>
+  ${mx.taxes>0?`<div class="kv"><span class="k">The ⅔ tax vote, counted today</span><span class="v ${taxOk?"good":"bad"}">${taxOk?`HAS THE VOTES — Asm ${tv.asm}/54 · Sen ${tv.sen}/27`:`SHORT — Asm ${tv.asm}/54 · Sen ${tv.sen}/27 · ${fmtB(mx.taxes,0)} evaporates in June`}</span></div>`:""}
+  <div class="kv"><span class="k">DOF: what will actually land <span class="subtle">(reliability ${Math.round(rel*100)}% at standing ${g.legStanding>=0?"+":""}${Math.round(g.legStanding)} — NEGOTIATE WITH LEADERSHIP raises it)</span></span><span class="v ${landing>=g.fiscal.deficit*0.5?"good":landing>=g.fiscal.deficit*0.25?"warn":"bad"}">≈ ${fmtB(landing,1)} → gap ${fmtB(gapAfter,1)}</span></div>
   <div class="kv"><span class="k">Projected LAO grade</span><span class="v">${pv.label}</span></div>
   <div class="subtle" style="margin-top:4px">CONSTITUENCY INVOICES: ${pv.costs.length?pv.costs.join(" · "):"remarkably few — check your arithmetic"}</div>`;
 }
