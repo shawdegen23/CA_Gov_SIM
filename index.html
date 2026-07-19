@@ -387,6 +387,19 @@
   .lt-st.now{color:#0d0d0d; background:var(--yellow); font-weight:700;}
   .lt-arrow{color:var(--baseline); font-size:9px; padding:0 1px;}
   .lt-meta{font-size:10.5px; color:var(--ink2); padding:1px 0;}
+  /* V3-P3: gauges, pace chips — trackers read at a glance instead of in prose */
+  .vg{display:flex; align-items:center; gap:7px; margin:2px 0;}
+  .vg .vg-lab{font-family:var(--mono); font-size:9px; color:var(--muted); width:28px; letter-spacing:.08em; text-align:right;}
+  .vg .vg-bar{flex:1; height:8px; background:var(--surface3); border-radius:4px; position:relative; max-width:240px;}
+  .vg .vg-fill{position:absolute; top:0; bottom:0; left:0; border-radius:4px;}
+  .vg .vg-tick{position:absolute; top:-2.5px; bottom:-2.5px; width:2px; background:var(--ink); opacity:.8; border-radius:1px;}
+  .vg .vg-num{font-family:var(--mono); font-size:10px; color:var(--ink2); white-space:nowrap;}
+  .chiprow{display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; align-items:center;}
+  .mchip{font-family:var(--mono); font-size:9.5px; padding:1px 7px; border-radius:9px; border:1px solid var(--ring); color:var(--ink2); white-space:nowrap;}
+  .mchip b{color:var(--ink); font-weight:600;}
+  .mchip.good{color:var(--good); border-color:rgba(87,183,123,.45);}
+  .mchip.bad{color:var(--serious); border-color:rgba(214,106,79,.5);}
+  .mchip.warn{color:var(--warn); border-color:rgba(216,180,90,.5);}
   .pendrow{opacity:.8;}
 
   /* ---- chart explorer & HSR tracker ---- */
@@ -4121,14 +4134,20 @@ function tabbar(g,tab){
 /* Overview: four stat tiles — the game at a glance */
 function statTiles(g,apDelta){
   const M=g.market;
-  const tile=(lab,val,delta,sp,cls)=>`<div class="tile ${cls||""}"><div class="tlab">${lab}</div><div class="tval num">${val}</div><div class="tdelta">${delta}</div>${sp||""}</div>`;
+  // V3-P3: every tile reads the same way — label, number, THIS MONTH's delta, then the term so far
+  const dlt=a=>a&&a.length>=2?a[a.length-1]-a[a.length-2]:0;
+  const chip=(d,goodWhen,fmt)=>{if(Math.abs(d)<0.05)return `<span class="subtle">— flat this month</span>`;
+    const good=goodWhen==="up"?d>0:d<0;
+    return `<span class="${good?"delta-up":"delta-dn"}">${d>0?"▲":"▼"}${fmt(Math.abs(d))} this month</span>`;};
+  const dDef=dlt(g.hist.deficit),dMkt=dlt(M.hist),dPc=dlt(g.hist.pc);
+  const tile=(lab,val,delta,sub,sp,cls)=>`<div class="tile ${cls||""}"><div class="tlab">${lab}</div><div class="tval num">${val}</div><div class="tdelta">${delta}${sub?` <span class="subtle">· ${sub}</span>`:""}</div>${sp||""}</div>`;
   return `<div class="tiles">
-    ${tile("APPROVAL",g.approval.toFixed(0)+"%",`<span class="${apDelta>=0?"delta-up":"delta-dn"}">${apDelta>=0?"▲":"▼"}${Math.abs(apDelta).toFixed(1)} this month</span>`,spark(g.hist.approval,150,26,"var(--blue)",{fill:1}),"acc-blue")}
+    ${tile("APPROVAL",g.approval.toFixed(0)+"%",chip(apDelta,"up",v=>v.toFixed(1)),g.honeymoon>0?"honeymoon "+g.honeymoon+" mo":"",spark(g.hist.approval,150,26,"var(--blue)",{fill:1}),"acc-blue")}
     ${g.fiscal.deficit<0
-      ?tile("OPERATING SURPLUS",fmtB(Math.abs(g.fiscal.deficit),1),`<span class="delta-up">/yr · inherited a $${g.inheritedDeficit}B deficit</span>`,spark(g.hist.deficit,150,26,"var(--good)",{eras:M.eras,fill:1,fmt:v=>fmtB(v,1)}),"acc-aqua")
-      :tile("STRUCTURAL DEFICIT",fmtB(g.fiscal.deficit,1),`<span class="subtle">/yr · inherited $${g.inheritedDeficit}B</span>`,spark(g.hist.deficit,150,26,"var(--red)",{eras:M.eras,fill:1,fmt:v=>fmtB(v,1)}),"crit acc-red")}
-    ${tile("MARKET · FED "+((M.macro&&M.macro.stance)||"neutral").toUpperCase(),M.idx.toFixed(0),`<span class="${M.mode==="exuberant"?"delta-up":M.mode==="recovery"?"subtle":"delta-dn"}">${M.mode}</span>`,spark(M.hist,150,26,M.mode==="exuberant"?"var(--aqua)":"var(--red)",{eras:M.eras,fill:1}),M.mode==="exuberant"?"acc-aqua":"acc-red")}
-    ${tile("POLITICAL CAPITAL",g.pc,`<span class="subtle">honeymoon ${g.honeymoon>0?g.honeymoon+" mo left":"over"}</span>`,spark(g.hist.pc,150,26,"var(--violet)",{fill:1}),"acc-violet")}
+      ?tile("OPERATING SURPLUS",fmtB(Math.abs(g.fiscal.deficit),1),chip(dDef,"down",v=>fmtB(v,1)),"inherited $"+g.inheritedDeficit+"B hole",spark(g.hist.deficit,150,26,"var(--good)",{eras:M.eras,fill:1,fmt:v=>fmtB(v,1)}),"acc-aqua")
+      :tile("STRUCTURAL DEFICIT",fmtB(g.fiscal.deficit,1)+"/yr",chip(dDef,"down",v=>fmtB(v,1)),"inherited $"+g.inheritedDeficit+"B",spark(g.hist.deficit,150,26,"var(--red)",{eras:M.eras,fill:1,fmt:v=>fmtB(v,1)}),"crit acc-red")}
+    ${tile("MARKET · FED "+((M.macro&&M.macro.stance)||"neutral").toUpperCase(),M.idx.toFixed(0),chip(dMkt,"up",v=>v.toFixed(1)),M.mode,spark(M.hist,150,26,M.mode==="exuberant"?"var(--aqua)":"var(--red)",{eras:M.eras,fill:1}),M.mode==="exuberant"?"acc-aqua":"acc-red")}
+    ${tile("POLITICAL CAPITAL",g.pc,chip(dPc,"up",v=>v.toFixed(0)),g.pc>=20?"spend it — it caps":"low: quiet months rebuild",spark(g.hist.pc,150,26,"var(--violet)",{fill:1}),"acc-violet")}
   </div>`;
 }
 /* Overview: inbox + In Motion, merged & compact */
@@ -4285,6 +4304,11 @@ function inMotionPanel(g){
 /* LEG-2: the bill tracker — where every piece of legislation actually is, in public */
 function legTrackerPanel(g){
   const pipe=g.bills.pipeline,desk=g.bills.desk,log=(g.bills.outcomeLog||[]).slice(0,6);
+  // V3-P3: bullet gauge — fill is what you have, tick is what you need, one glance
+  const vgauge=(lab,have,need,total)=>{
+    const pct=clamp(have/total*100,0,100),tick=clamp(need/total*100,0,100);
+    const col=have>=need?"var(--good)":have>=need-4?"var(--warn)":"var(--serious)";
+    return `<div class="vg"><span class="vg-lab">${lab}</span><div class="vg-bar"><div class="vg-fill" style="width:${pct.toFixed(1)}%;background:${col}"></div><div class="vg-tick" style="left:${tick.toFixed(1)}%" title="${need} needed"></div></div><span class="vg-num">${have}<span class="subtle">/${need} needed</span></span></div>`;};
   const drives=(g.measures.pending||[]).some(m=>m.gathering);
   const onBallot=(g.measures.pending||[]).some(m=>!m.gathering&&m.electionTurn)||(g.measures.hostile||[]).some(h=>h.electionTurn);
   if(!pipe.length&&!desk.length&&!log.length&&!drives&&!onBallot)return "";
@@ -4294,7 +4318,7 @@ function legTrackerPanel(g){
       <div class="lt-meta subtle">Sleeping in the biennium's drawer — returns to committee in January with its co-authors intact.</div></div>`;
     const stages=b.urgent?["Introduced","Committee","Floor · ⅔ monthly","Desk"]:["Introduced","Committee","Suspense","Floor","Desk"];
     const idx=b.urgent?(b.stage==="committee"?1:b.stage==="floor"?2:3):(b.stage==="committee"?1:b.stage==="suspense"?2:b.stage==="floor"?3:4);
-    const chips=stages.map((s,i)=>`<span class="lt-st ${i<idx?"done":i===idx?"now":""}">${s}</span>`).join(`<span class="lt-arrow">›</span>`);
+    const chips=stages.map((s,i)=>`<span class="lt-st ${i<idx?"done":i===idx?"now":""}">${s}</span>`).join("");
     const v=voteModel(g,false,{bonusSeats:b.whip||0,tax:!!b.needs23});
     const needA=(b.urgent||b.needs23)?54:41,needS=(b.urgent||b.needs23)?27:21; // urgency statutes take 2/3 regardless
     const next=b.urgent?"floor vote EVERY month (3 misses kills it)":b.stage==="committee"?"committee vote pending — PUSH LEGISLATION can force it":b.stage==="suspense"?`the chair's list moves in ${d.m<=5?"May":d.m<=8?"August":"May"}`:"floor vote when session ends (Aug 31)";
@@ -4304,21 +4328,42 @@ function legTrackerPanel(g){
       ${b.rescued&&b.stage==="suspense"?'<span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">RELEASE SECURED</span>':""}
       ${b.whip?`<span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">WHIPPED +${b.whip}</span>`:""}</div>
       <div class="lt-stages">${chips}</div>
-      <div class="lt-meta"><span class="num">count if voted today: Asm ${v.asm}/${needA} · Sen ${v.sen}/${needS}</span> <span class="subtle">· next: ${next}</span></div>
-      ${b.stage==="floor"&&(b.holdouts||[]).length?`<div class="lt-meta" style="font-size:10px">HOLDOUTS: ${b.holdouts.map(h=>`<span style="color:${h.won?"var(--good)":h.called?"var(--muted)":"var(--warn)"}" title="${esc(h.dist+" — wants "+h.price)}">${h.won?"✓ ":""}${esc(h.nm)}</span>`).join(" · ")} <span class="subtle">(PUSH LEGISLATION → call them)</span></div>`:""}</div>`;};
+      ${vgauge("ASM",v.asm,needA,g.leg.asmD+g.leg.asmR)}
+      ${vgauge("SEN",v.sen,needS,g.leg.senD+g.leg.senR)}
+      <div class="lt-meta"><span class="subtle">count if voted today · next: ${next}</span></div>
+      ${b.stage==="floor"&&(b.holdouts||[]).length?`<div class="chiprow" style="margin-top:2px">${b.holdouts.map(h=>`<span class="mchip ${h.won?"good":h.called?"":"warn"}" title="${esc(h.dist+" — wants "+h.price)}">${h.won?"✓ ":""}${esc(h.nm)}</span>`).join("")} <span class="subtle" style="font-size:9.5px">HOLDOUTS — PUSH LEGISLATION → call them</span></div>`:""}</div>`;};
   return `<div class="panel"><h3>Bill Tracker <span class="subtle">${pipe.length} in the building · ${desk.length} on the desk</span></h3>
   ${pipe.length?pipe.map(stageRow).join(""):`<div class="subtle">Nothing of yours is in the building. SPONSOR LEGISLATION opens the ${d.y} slate${d.m>6?" in January (introduction deadline passed)":""}.</div>`}
-  ${desk.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">ON THE DESK — sign or veto by Sept 30</div>${desk.map(b=>`<div class="lt-meta">▸ ${b.num} ${b.t}${b.sponsored?' <span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">YOURS</span>':""}${b.fromLeg?' <span class="subtle" style="font-size:9px">(the Legislature’s)</span>':""}</div>`).join("")}`:""}
-  ${(g.measures.pending||[]).some(m=>m.gathering)?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">✍ SIGNATURE DRIVES <span style="float:right">~$9/name · 180-day clock · CAMPAIGN FOR YOUR MEASURE can surge a drive</span></div>${g.measures.pending.filter(m=>m.gathering).map(m=>{const pct=Math.min(100,m.sigsGot/m.sigs*100);const monthsIn=g.turn-m.startTurn;
+  ${""/* V3-P3: desk bills live in THE SEPTEMBER DESK set-piece (with the sign/veto buttons) — listing them here twice was noise */}
+  ${(g.measures.pending||[]).some(m=>m.gathering)?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">✍ SIGNATURE DRIVES <span style="float:right">~$9/name · 180-day clock · CAMPAIGN FOR YOUR MEASURE can surge a drive</span></div>${g.measures.pending.filter(m=>m.gathering).map(m=>{
+    const pct=Math.min(100,m.sigsGot/m.sigs*100),monthsIn=g.turn-m.startTurn;
+    // V3-P3: pace projection — the number a campaign manager would actually give you
+    const mLeft=Math.max(0,7-monthsIn),rem=m.sigs-m.sigsGot;
+    const projM=m.rate>0?Math.ceil(rem/(m.rate*1000)):99;
+    const onPace=projM<=mLeft;
     return `<div class="lt-row"><div class="lt-hd" style="font-size:11.5px">${esc(m.t)} <span class="subtle num">(${m.type} · needs ${m.sigs.toLocaleString()})</span></div>
-    <div class="abar" style="height:9px;margin:3px 0"><div class="fill" style="left:0;width:${pct}%;background:${pct>70?"var(--good)":pct>35?"var(--yellow)":"var(--serious)"}"></div></div>
-    <div class="lt-meta num">${m.sigsGot.toLocaleString()} gathered (${Math.round(pct)}%) · month ${monthsIn+1} of ~6 · ${monthsIn>=5&&pct<85?'<span style="color:var(--critical)">THE CLOCK IS WINNING</span>':"on the clock"}</div></div>`;}).join("")}`:""}
+    <div class="abar" style="height:9px;margin:4px 0"><div class="fill" style="left:0;width:${pct}%;background:${onPace?"var(--good)":pct>35?"var(--yellow)":"var(--serious)"}"></div></div>
+    <div class="chiprow"><span class="mchip"><b>${Math.round(pct)}%</b> · ${m.sigsGot.toLocaleString()} gathered</span>
+      <span class="mchip">month ${monthsIn+1} of ~7</span>
+      ${onPace?`<span class="mchip good">on pace — qualifies ~${turnDate(Math.min(48,g.turn+projM)).label}</span>`
+        :`<span class="mchip bad">BEHIND PACE — needs ~${Math.ceil(rem/Math.max(mLeft,1)/1000)}k/mo, gathering ~${m.rate}k</span>`}</div></div>`;}).join("")}`:""}
   ${(g.measures.pending||[]).some(m=>!m.gathering&&m.electionTurn)?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">🗳 ON THE BALLOT <span style="float:right">CAMPAIGN FOR YOUR MEASURE moves the number</span></div>${g.measures.pending.filter(m=>!m.gathering&&m.electionTurn).map(m=>{
     let yes=m.baseYes+(g.approval-48)*0.25+(m.playerSpend||0)*0.4;
     for(const o of (m.oppose||[]))if(g.actors[o]<=-20)yes-=6;
+    const opp=(m.oppose||[]).some(o=>g.actors[o]<=-20);
+    // V3-P3: the YES gauge — fill is the projection, the tick is 50%, color is the margin
+    const yCol=yes>=53?"var(--good)":yes>=49.5?"var(--warn)":"var(--serious)";
     return `<div class="lt-row"><div class="lt-hd" style="font-size:11.5px">${esc(m.t)} <span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">QUALIFIED</span></div>
-    <div class="lt-meta num">polls ~${Math.round(yes)}% yes · election ${turnDate(m.electionTurn).label} (${m.electionTurn-g.turn} mo) · ${measureFiscalTag(m)}${(m.oppose||[]).some(o=>g.actors[o]<=-20)?' · <span style="color:var(--serious)">funded opposition active (−6/group)</span>':""}</div></div>`;}).join("")}`:""}
-  ${(g.measures.hostile||[]).filter(h=>h.electionTurn).length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">⚠ HOSTILE MEASURES ON THE BALLOT <span style="float:right">OPPOSE A HOSTILE MEASURE kills one</span></div>${g.measures.hostile.filter(h=>h.electionTurn).map(h=>`<div class="lt-meta">▸ ${esc(h.t)} <span class="num subtle">· election ${turnDate(h.electionTurn).label} · ignored initiatives get VOTED ON</span></div>`).join("")}`:""}
+    <div class="vg" style="margin:4px 0"><span class="vg-lab">YES</span><div class="vg-bar" style="max-width:290px"><div class="vg-fill" style="width:${clamp(yes/70*100,0,100).toFixed(1)}%;background:${yCol}"></div><div class="vg-tick" style="left:${(50/70*100).toFixed(1)}%" title="50% to pass"></div></div><span class="vg-num">polls ~${Math.round(yes)}% yes</span></div>
+    <div class="chiprow"><span class="mchip">election <b>${turnDate(m.electionTurn).label}</b> · in ${m.electionTurn-g.turn} mo</span>
+      <span class="mchip">${measureFiscalTag(m)}</span>
+      ${(m.playerSpend||0)>2?`<span class="mchip good">campaign +${(((m.playerSpend||0)-2)*0.4).toFixed(1)} pts banked</span>`:""}
+      ${opp?'<span class="mchip bad">funded opposition active (−6/group)</span>':""}</div></div>`;}).join("")}`:""}
+  ${(g.measures.hostile||[]).filter(h=>h.electionTurn).length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">⚠ HOSTILE MEASURES ON THE BALLOT <span style="float:right">OPPOSE A HOSTILE MEASURE kills one</span></div>${g.measures.hostile.filter(h=>h.electionTurn).map(h=>{
+    const hy=(h.baseYes||52)+(48-g.approval)*0.3;
+    return `<div class="lt-row"><div class="lt-hd" style="font-size:11.5px">${esc(h.t)}</div>
+    <div class="vg" style="margin:3px 0"><span class="vg-lab">YES</span><div class="vg-bar" style="max-width:290px"><div class="vg-fill" style="width:${clamp(hy/70*100,0,100).toFixed(1)}%;background:${hy>50?"var(--serious)":"var(--good)"}"></div><div class="vg-tick" style="left:${(50/70*100).toFixed(1)}%" title="50% to pass"></div></div><span class="vg-num">~${Math.round(hy)}% yes <span class="subtle">(their measure — under 50 is YOUR win)</span></span></div>
+    <div class="chiprow"><span class="mchip">election <b>${turnDate(h.electionTurn).label}</b></span><span class="mchip warn">ignored initiatives get VOTED ON</span></div></div>`;}).join("")}`:""}
   ${log.length?`<div class="hr"></div><div class="subtle" style="margin-bottom:2px">RECENT OUTCOMES</div>${log.map(o=>`<div class="lt-meta"><span class="due">[${turnDate(o.t).label}]</span> ${o.num} ${esc(o.title)} — <span style="color:${o.res==="signed"?"var(--good)":o.res==="vetoed"?"var(--red)":o.res==="became law unsigned"?"var(--ink2)":"var(--serious)"}">${o.res}</span>${o.eff?` <span class="subtle" style="font-size:9.5px">(${esc(o.eff)})</span>`:""}${o.sponsored?' <span class="pill" style="color:var(--aqua);border-color:var(--aqua);font-size:8px">YOURS</span>':""}</div>`).join("")}`:""}
   </div>`;
 }

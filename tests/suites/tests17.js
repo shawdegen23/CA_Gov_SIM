@@ -101,5 +101,27 @@ console.log("— unaffordable choices lock instead of lying —");
   const memo3=buildMemo(g3).find(l=>l.includes("AROUND the building"));
   T("...and drops the warning once funded",!!memo3&&!memo3.includes("FUNDRAISE first"));
 }
+console.log("— the trackers read at a glance (V3-P3 gauges) —");
+{
+  const g=newGame(CFG({seed:8}));
+  const b={...BILL_POOL.find(x=>x.id==="b_upzone"),stage:"floor",sponsored:true,whip:2};
+  makeHoldouts(g,b);g.bills.pipeline=[b];
+  g.measures.pending=[
+    {...MEASURES.find(m=>m.id==="m_sportsbet"),gathering:true,sigsGot:100000,rate:60,startTurn:g.turn-4,playerSpend:2},
+    {...MEASURES.find(m=>m.id==="m_splitroll"),gathering:false,electionTurn:23,playerSpend:7,startTurn:1}];
+  g.actors.chamber=-30;g.turn=6;
+  const p=legTrackerPanel(g);
+  T("floor bills carry Asm+Sen vote gauges",(p.match(/class="vg"/g)||[]).length>=2&&p.includes("needed"));
+  T("a slow drive is called BEHIND PACE with the required rate",p.includes("BEHIND PACE")&&/needs ~\d+k\/mo/.test(p));
+  T("qualified measures get the YES gauge with the 50% tick",p.includes("50% to pass")&&p.includes("polls ~"));
+  T("banked campaign spend shows as a chip",p.includes("pts banked"));
+  T("holdouts render as chips",p.includes("mchip")&&p.includes(b.holdouts[0].nm));
+  const fast={...MEASURES.find(m=>m.id==="m_oilsev"),gathering:true,sigsGot:400000,rate:200,startTurn:g.turn-1,playerSpend:2};
+  g.measures.pending=[fast];
+  T("a healthy drive projects its qualification month",/on pace — qualifies ~\w+ \d{4}/.test(legTrackerPanel(g)));
+  // the desk list no longer duplicates the September set-piece
+  g.bills.desk=[{...BILL_POOL.find(x=>x.id==="b_ai"),stage:"passed"}];
+  T("desk bills live in the set-piece, not twice",!legTrackerPanel(g).includes("ON THE DESK")&&setpiece(g,turnDate(g.turn)).includes("SEPTEMBER DESK"));
+}
 console.log("\nRESULT: "+PASS+" passed, "+FAIL+" failed");
 if(FAIL)process.exit(1);

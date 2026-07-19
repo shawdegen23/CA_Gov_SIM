@@ -23,7 +23,7 @@ console.log("— SHELF-1: named holdouts —");
   const f2=freeze();RNG.r=()=>0.05;push.run(g,"b_upzone|call0");thaw(f2);
   T("a landed call is +1 real vote",b.whip===w0+1&&b.holdouts[0].won===true);
   T("each member callable once",!push.choices(g).some(c=>c.id==="b_upzone|call0"));
-  T("tracker names the holdouts",legTrackerPanel(g).includes("HOLDOUTS:")&&legTrackerPanel(g).includes(b.holdouts[1].nm));
+  T("tracker names the holdouts",legTrackerPanel(g).includes("HOLDOUTS")&&legTrackerPanel(g).includes(b.holdouts[1].nm)); // V3-P3: chips now, same names
   const g3=newGame(CFG({seed:2}));const b3={...BILL_POOL.find(x=>x.id==="b_fairshare"),stage:"floor",sponsored:true};
   makeHoldouts(g3,b3);
   T("2/3 bills get no holdout theater (arithmetic, not phone calls)",!b3.holdouts);
