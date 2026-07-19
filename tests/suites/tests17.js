@@ -82,5 +82,24 @@ console.log("— the vanishing second measure: broke launches refund —");
   spendSlots(g3,1);spendPC(g3,3);pm.run(g3,"m_splitroll|ads");
   T("a dead ad buy refunds its slot and 3 PC",g3.pc===pc2&&g3.slots===sl2);
 }
+console.log("— unaffordable choices lock instead of lying —");
+{
+  const g=newGame(CFG({seed:5}));g.player.chest=6; // real case: $6M chest vs $8M/$12M drives
+  const ballot=ACTIONS.find(a=>a.id==="ballot");
+  T("every drive the chest can't cover is flagged disabled",ballot.choices(g).every(c=>c.disabled===true));
+  T("...and says what's missing",ballot.choices(g).every(c=>c.cost.includes("NEEDS $")&&c.cost.includes("you have $6M")));
+  const html=choicesModal(g,ballot);
+  T("the modal renders them locked and unclickable",html.includes('class="choice locked" disabled')&&!html.includes("keyhint"));
+  g.player.chest=20;
+  const html2=choicesModal(g,ballot);
+  T("with money, the menu unlocks and hotkeys return",!html2.includes("locked")&&html2.includes("keyhint"));
+  // the memo warns when it recommends a route you can't afford
+  const g2=newGame(CFG({seed:6}));g2.fiscal.deficit=35;g2.player.chest=6;
+  const memo=buildMemo(g2).find(l=>l.includes("AROUND the building"));
+  T("memo names the war-chest gap on the ballot route",!!memo&&memo.includes("FUNDRAISE first"),memo);
+  const g3=newGame(CFG({seed:7}));g3.fiscal.deficit=35;g3.player.chest=20;
+  const memo3=buildMemo(g3).find(l=>l.includes("AROUND the building"));
+  T("...and drops the warning once funded",!!memo3&&!memo3.includes("FUNDRAISE first"));
+}
 console.log("\nRESULT: "+PASS+" passed, "+FAIL+" failed");
 if(FAIL)process.exit(1);

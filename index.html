@@ -158,6 +158,8 @@
     max-height:86vh; overflow-y:auto; padding:18px 20px; box-shadow:0 18px 60px rgba(0,0,0,.55);}
   .modal h2{font-size:16px; margin-bottom:8px; border-bottom:1px solid var(--grid); padding-bottom:7px;}
   .choice{display:block; width:100%; text-align:left; margin-bottom:7px; padding:9px 11px;}
+  .choice.locked{opacity:.5; cursor:not-allowed;}
+  .choice.locked .cc{color:var(--serious);}
   .choice .cn{color:var(--ink); font-weight:600; display:block; font-size:13px;}
   .choice .cd{display:block; font-size:11.5px; color:var(--ink2);}
   .choice .cc{display:block; font-family:var(--mono); font-size:10px; color:var(--warn);}
@@ -3522,12 +3524,14 @@ const ACTIONS=[
     return MEASURES.filter(m=>!g.measures.pending.find(p=>p.id===m.id)&&!(g.measures.resolved||[]).find(p=>p.id===m.id)).map(m=>{
       const cost=m.type==="ICA"?12:8;
       return {id:m.id,nm:`${m.t} (${m.type})`,d:m.d+` Requires ${m.sigs.toLocaleString()} valid signatures.`,
-        cost:g.player.chest<cost?`${measureFiscalTag(m)} · NEEDS $${cost}M in the war chest — FUNDRAISE first`
+        disabled:g.player.chest<cost,
+        cost:g.player.chest<cost?`${measureFiscalTag(m)} · NEEDS $${cost}M in the war chest (you have $${g.player.chest}M) — FUNDRAISE first`
           :`${measureFiscalTag(m)} · ${selfFund?"SELF-FUND — $"+cost+"M of your own money":"$"+cost+"M from the war chest + COA roll"}`};});},
   run:(g,c)=>{const m=MEASURES.find(x=>x.id===c);const selfFund=g.player.bg==="tech";
     const cost=m.type==="ICA"?12:8;
     if(g.player.chest<cost){
       g.slots+=2;g.pc=clamp(g.pc+10,0,110); // V3 fix: a launch that never launched refunds its slots and PC
+      toast(`Can't launch — needs $${cost}M, war chest has $${g.player.chest}M. FUNDRAISE first. (Slots and PC refunded.)`);
       cov(g,"Politico","Signature drive stalls at the bank","Qualification runs ~$9 a signature and the war chest can't cover the invoice. FUNDRAISE first, or make peace with the Legislature you were trying to route around. (No slots or capital spent — the vendors don't bill for meetings.)");return;}
     g.player.chest-=cost;
     // SHELF-5: qualification is a DRIVE now — months of visible gathering on the Bill Tracker,
@@ -3549,6 +3553,7 @@ const ACTIONS=[
     for(const m of g.measures.pending){
       if(m.gathering)out.push({id:m.id+"|surge",nm:`${m.t} — surge the signature drive`,
         d:`Double the vendor crews for a month: +180,000 signatures immediately and a faster rate after. Currently ${m.sigsGot.toLocaleString()} of ${m.sigs.toLocaleString()} with the 180-day clock running.`,
+        disabled:g.player.chest<3,
         cost:g.player.chest>=3?"$3M from the war chest":"NEEDS $3M in the war chest — FUNDRAISE first"});
       else if(m.electionTurn){
         out.push({id:m.id+"|campaign",nm:`${m.t} — barnstorm for the YES`,
@@ -3556,6 +3561,7 @@ const ACTIONS=[
           cost:"CHA roll · +YES either way, more on a hit"});
         out.push({id:m.id+"|ads",nm:`${m.t} — statewide ad blitz`,
           d:"No roll, no stump, no risk — just money. $5M of airtime, mail, and digital moves the projected YES about +1.2. Repeatable for as long as the war chest holds; campaigns are won at the margins by whoever stopped writing checks last.",
+          disabled:g.player.chest<5,
           cost:g.player.chest>=5?"$5M from the war chest → +1.2 projected YES":"NEEDS $5M — FUNDRAISE first"});
         const foes=(m.oppose||[]).filter(o=>g.actors[o]<=-20);
         if(foes.length){const tgt=foes.sort((a,b)=>g.actors[a]-g.actors[b])[0];
@@ -3573,6 +3579,7 @@ const ACTIONS=[
     const m=g.measures.pending.find(x=>x.id===mid);if(!m)return;
     if(verb==="surge"){
       if(g.player.chest<3){g.slots+=1;g.pc=clamp(g.pc+3,0,110); // V3 fix: refused orders refund their costs
+        toast("Can't surge — needs $3M in the war chest. FUNDRAISE first. (Slot and PC refunded.)");
         cov(g,"Politico","The surge order bounced at the bank","The vendors want payment on signing and the war chest is short. FUNDRAISE, then flood the Costco parking lots. (No slot or capital spent.)");return;}
       g.player.chest-=3;m.sigsGot+=180000;m.rate+=20;
       cov(g,"CalMatters",`The "${m.t}" drive doubles its crews`,
@@ -3587,6 +3594,7 @@ const ACTIONS=[
           `The rallies happened; the clips led with the protesters outside. The YES number inches up on organization alone, but the big move didn't come. There is another month, until there isn't.`);}
     else if(verb==="ads"){
       if(g.player.chest<5){g.slots+=1;g.pc=clamp(g.pc+3,0,110); // V3 fix: refused orders refund their costs
+        toast("Can't buy ads — needs $5M in the war chest. FUNDRAISE first. (Slot and PC refunded.)");
         cov(g,"Politico","The ad buy dies in accounting","The consultants sent a media plan; the war chest sent regrets. FUNDRAISE, then flood the airwaves. (No slot or capital spent.)");return;}
       g.player.chest-=5;m.playerSpend=(m.playerSpend||0)+3;
       cov(g,"CalMatters",`$5M hits the air for "${m.t}"`,
@@ -4337,7 +4345,7 @@ function buildMemo(g){
   if(g.pc<12&&(g.flags.barnstormCd||0)<=g.turn)out.push(`Political capital is down to ${g.pc} — you can't afford your own agenda. BARNSTORM THE STATE converts a road month into chits (town halls, the donor circuit, or the counties), and an under-scheduled month quietly regenerates more than a frantic one.`);
   if(g.fiscal.deficit>32){const revTools=[["revenforce","FTB ENFORCEMENT SPRINT"],["revfedsweep","FEDERAL REIMBURSEMENT SWEEP"],["revamnesty","TAX AMNESTY"],["revsurplus","SURPLUS PROPERTY SALE"]].filter(([id])=>{const a=ACTIONS.find(x=>x.id===id);return a&&a.when(g)===true;}).map(([,n])=>n);
     if(revTools.length)out.push(`The gap is ${fmtB(g.fiscal.deficit)} and no 2/3 tax vote exists. Revenue you can raise WITHOUT the Legislature: ${revTools.join(", ")}. Enforcement and reimbursements are ongoing money; amnesties and asset sales are one-time — they boomerang in twelve months, priced honestly.`);
-    if(g.measures.pending.length<3)out.push(`Or go AROUND the building entirely: QUALIFY A BALLOT MEASURE. Split roll ($4B/yr), the services swap ($6B/yr), oil severance ($1.5B/yr) — none of them need 54 votes. They need 50%+1 of the voters, ~$9 a signature, and the nerve.`);}
+    if(g.measures.pending.length<3)out.push(`Or go AROUND the building entirely: QUALIFY A BALLOT MEASURE. Split roll ($4B/yr), the services swap ($6B/yr), oil severance ($1.5B/yr) — none of them need 54 votes. They need 50%+1 of the voters, ~$9 a signature, and the nerve.${g.player.chest<8?` One problem: a drive costs $8–12M and the war chest holds $${g.player.chest}M. FUNDRAISE first.`:""}`);}
   if(!out.length)out.push("A quiet month on paper. There is no such thing — check In Motion for what's already coming, and spend the quiet building standing you'll need in the loud months.");
   return out;
 }
@@ -4565,10 +4573,13 @@ function actionsModal(g){
 }
 function choicesModal(g,action){
   const ch=action.choices(g);
+  // V3 fix: unaffordable choices render locked — visible (so the option is discoverable) but
+  // unclickable, instead of silently refusing after the click. Hotkeys number only the live ones.
+  let k=0;
   return `<div class="modal-back" data-act="closemodal"><div class="modal">
   <h2>${action.nm}</h2>
-  ${ch.length?ch.map((c,i)=>`<button class="choice" data-act="dochoice" data-id="${action.id}" data-c="${c.id}">
-    <span class="cn">${i<9?`<span class="keyhint">${i+1}</span> `:""}${c.nm}</span><span class="cd">${c.d}</span>${c.cost?`<span class="cc">${c.cost}</span>`:""}</button>`).join(""):"<p>No options available right now.</p>"}
+  ${ch.length?ch.map(c=>`<button class="choice${c.disabled?" locked":""}"${c.disabled?" disabled":""} data-act="dochoice" data-id="${action.id}" data-c="${c.id}">
+    <span class="cn">${!c.disabled&&k<9?`<span class="keyhint">${++k}</span> `:""}${c.nm}</span><span class="cd">${c.d}</span>${c.cost?`<span class="cc">${c.cost}</span>`:""}</button>`).join(""):"<p>No options available right now.</p>"}
   <button data-act="closemodal">Cancel</button></div></div>`;
 }
 function wallsModal(g){
